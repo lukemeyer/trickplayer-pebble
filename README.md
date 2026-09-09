@@ -16,14 +16,24 @@ display-ready bytes. The watch never fetches, by design: raw JPEG would cost
 | 0 — spikes | **done** (watch side). See [spikes/PHASE0-FINDINGS.md](spikes/PHASE0-FINDINGS.md) |
 | 1 — watch skeleton | **done** — layout, clock, scene ring, trigger registry |
 | 2 — protocol | **done** — chunked AppMessage transport, verified end to end |
-| 3 — config page | **built, not deployed** — Plex PIN sign-in, browse, select |
+| 3 — config page | **done** — Plex PIN sign-in, browse, select; deployed to Pages |
 | 4 — content pipeline | **done** — frames and subtitles, against a real server |
 | 5 — cache & policy | **done** — LRU cache, prefetch, resume, power/offline guards |
 | 6 — enhancements | not started |
 
-**Running on real hardware** (Pebble Time 2 + Pixel 10 Pro Fold over `--adb`):
-real frames and synced subtitles, cached and prefetched, advancing on tap.
-Outstanding: hosting the config page, Plex PIN sign-in, and a battery-life trial.
+**Running on real hardware** (Pebble Time 2 + Android over `--adb`): real frames
+and synced subtitles, cached and prefetched, advancing on tap. The config page is
+live at <https://lukemeyer.github.io/bif-watchface-pebble/config/>.
+
+Outstanding: a battery-life trial, and walking the hosted sign-in flow end to end
+on the phone.
+
+### What is NOT in this repo
+
+`src/pkjs/local-config.js` (a Plex server URL and token) is gitignored — copy
+`local-config.example.js` if you want to run before the config page exists.
+Screenshots and encoded frames are also excluded: they are stills from a TV
+episode, and they are development artefacts rather than anything needed to build.
 
 ## Layout
 
@@ -126,10 +136,12 @@ polling alone:
 - **An explicit "I've authorised it" button**, so nothing depends on a timer.
 - **Manual token entry** remains, collapsed, as the escape hatch.
 
-**It is still not hosted.** `CONFIG_URL` in `src/pkjs/index.js` points at
-`https://lukemeyer.github.io/bif-watchface-pebble/config/`, which does not exist
-yet. Publish `config/` to GitHub Pages (or anywhere https) and set the URL to
-match. Locally: `python3 -m http.server 8791` in `config/`, then
+**Hosted** at <https://lukemeyer.github.io/bif-watchface-pebble/config/>, which
+is what `CONFIG_URL` in `src/pkjs/index.js` points at. GitHub Pages serves this
+repo's `main` branch from the root, so `config/` lands at that path directly —
+no build step and no Actions workflow.
+
+To iterate locally instead: `python3 -m http.server 8791` in `config/`, then
 `pebble emu-app-config --file config/index.html`.
 
 Server addresses are ranked local → direct https → relay before probing: relay is
