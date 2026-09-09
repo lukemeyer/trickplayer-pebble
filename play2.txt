@@ -1,0 +1,56 @@
+Installing app...
+App install succeeded.
+[23:23:09] moddable.c:94> evaluating creation record
+[23:23:09] pkjs> ./src/pkjs/index.js:37:0 [pkjs] config: local-config.js (dev)
+[23:23:09] pkjs> ./src/pkjs/index.js:37:0 [pkjs] ready
+[23:23:09] pkjs> ./src/pkjs/index.js:37:0 [pkjs] cache holds 0 scenes
+[23:23:09] xsHost.c:141> Found mod "pebble.moddable.tech"
+[23:23:09] pkjs> ./src/pkjs/index.js:37:0 [pkjs] hello failed (1), retrying
+[23:23:09] xsHost.c:141> trigger touch: unavailable
+[23:23:09] accel_service.c:441> Not enough memory to subscribe
+[23:23:09] xsHost.c:141> triggers started: accel-tap
+[23:23:09] xsHost.c:141> battery 100%
+[23:23:09] xsHost.c:141> refill 0 x1 deferred
+[23:23:09] xsHost.c:141> phone connected: true, resuming at scene 0
+[23:23:10] pkjs> ./src/pkjs/index.js:37:0 [pkjs] hello acked (2)
+[23:23:10] xsHost.c:141> proto: writable
+[23:23:10] pkjs> ./src/pkjs/index.js:37:0 [pkjs] SceneReq from 0 x1
+[23:23:10] xsHost.c:141> proto: writable
+[23:23:10] pkjs> ./src/pkjs/plex.js:20:0 [plex] range supported: true
+[23:23:10] pkjs> ./src/pkjs/plex.js:20:0 [plex] binary read mode: arraybuffer
+[23:23:10] pkjs> ./src/pkjs/index.js:37:0 [pkjs] BIF 736 frames, multiplier 1000ms
+[23:23:10] pkjs> ./src/pkjs/index.js:37:0 [pkjs] index ready: 148 scenes
+[23:23:11] pkjs> ./src/pkjs/index.js:37:0 [pkjs] subtitles: 476 cues
+[23:23:11] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 0 frame 0 is near-blank (1 colours); skipping ahead
+[23:23:11] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 0 frame 5 @10s: 12835B jpeg -> 7200B, 16 colours, 3 cues, 14ms
+[23:23:11] xsHost.c:141> scene 0 accepted
+[23:23:12] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 1 frame 10 @20s: 17401B jpeg -> 7200B, 14 colours, 3 cues, 13ms
+[23:23:12] pkjs> ./src/pkjs/index.js:37:0 [pkjs] prefetched 1 (cache 2)
+[23:23:13] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 2 frame 15 @30s: 5321B jpeg -> 7200B, 8 colours, 4 cues, 11ms
+[23:23:13] pkjs> ./src/pkjs/index.js:37:0 [pkjs] prefetched 2 (cache 3)
+[23:23:13] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 3 frame 20 @40s: 6225B jpeg -> 7200B, 9 colours, 2 cues, 14ms
+[23:23:13] pkjs> ./src/pkjs/index.js:37:0 [pkjs] prefetched 3 (cache 4)
+[23:23:14] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 4 frame 25 has no dialogue; skipping ahead
+[23:23:14] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 4 frame 30 @60s: 10670B jpeg -> 7200B, 6 colours, 3 cues, 8ms
+[23:23:14] pkjs> ./src/pkjs/index.js:37:0 [pkjs] prefetched 4 (cache 5)
+[23:23:14] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 5 frame 35 @70s: 18022B jpeg -> 7200B, 13 colours, 4 cues, 11ms
+[23:23:14] pkjs> ./src/pkjs/index.js:37:0 [pkjs] prefetched 5 (cache 6)
+[23:23:15] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 6 frame 40 @80s: 17153B jpeg -> 7200B, 15 colours, 3 cues, 11ms
+[23:23:15] pkjs> ./src/pkjs/index.js:37:0 [pkjs] prefetched 6 (cache 7)
+[23:23:15] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 7 frame 45 has no dialogue; skipping ahead
+[23:23:15] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 7 frame 50 has no dialogue; skipping ahead
+[23:23:15] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 7 frame 55 has no dialogue; skipping ahead
+[23:23:15] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 7 frame 60 @120s: 14747B jpeg -> 7200B, 16 colours, 2 cues, 6ms
+[23:23:15] pkjs> ./src/pkjs/index.js:37:0 [pkjs] prefetched 7 (cache 8)
+[23:23:16] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 8 frame 65 @130s: 11251B jpeg -> 7200B, 15 colours, 4 cues, 10ms
+[23:23:16] pkjs> ./src/pkjs/index.js:37:0 [pkjs] prefetched 8 (cache 9)
+[23:24:01] xsHost.c:141> advance
+[23:24:02] xsHost.c:141> play: stopped, back to minute ticks
+[23:24:18] xsHost.c:141> advance
+[23:24:18] pkjs> ./src/pkjs/index.js:37:0 [pkjs] SceneReq from 1 x1
+[23:24:18] xsHost.c:141> proto: writable
+[23:24:18] xsHost.c:141> scene 1 accepted
+[23:24:20] pkjs> ./src/pkjs/index.js:37:0 [pkjs] scene 9 frame 70 @140s: 14334B jpeg -> 7200B, 16 colours, 5 cues, 7ms
+[23:24:20] pkjs> ./src/pkjs/index.js:37:0 [pkjs] prefetched 9 (cache 10)
+[23:24:35] xsHost.c:141> advance
+[23:24:36] xsHost.c:141> play: stopped, back to minute ticks

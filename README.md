@@ -182,6 +182,34 @@ Touch is therefore disabled by default (`TOUCH_ENABLED` in `triggers.js`), left
 registered so it can be switched back on in one line if firmware changes. The
 accelerometer tap is the working trigger.
 
+## Play bursts, and why the second tick is temporary
+
+A tap plays out the rest of the current scene rather than stepping one cue, by
+subscribing to `secondchange` for a few seconds and then unsubscribing.
+
+This is worth doing because of how Alloy schedules time events. All of them share
+**one** timer, and its period is the finest unit currently subscribed
+(`build/devices/pebble/modules/global/global.js`, `#schedule()`): with
+`secondchange` subscribed the watch wakes every second; with only `minutechange`,
+every sixty. `removeEventListener` re-runs `#schedule()`, so dropping the
+listener genuinely drops the wake rate back — the burst costs 1 Hz for its
+duration and nothing afterwards.
+
+Two details of that implementation that the design leans on:
+
+- Subscribing a time event **fires the callback immediately**, so a burst starts
+  at once rather than up to a second late.
+- `#tick` only emits `minutechange` on an actual minute roll, so keeping both
+  subscribed causes no duplicate minute events.
+
+The burst advances every **second** tick, not every tick: 1 Hz is the finest
+Alloy offers, but real subtitle cues run 2-4 s and stepping every tick reads far
+too fast. It also **stops at a scene boundary** — crossing one costs a fetch, and
+that stays a deliberate tap rather than something a burst does on its own.
+
+Cue-only changes repaint just the bands below the frame (`face.drawBelow`), so a
+burst never re-expands the picture.
+
 ## The memory budget (read this before adding watch-side code)
 
 The XS machine and the C-side services share the app's ~122.5 KB heap, and they
@@ -231,4 +259,4 @@ the device.
   against ~18,000 available — plausible but unproven, and not worth risking the
   watch to find out. Try it only with a known-good build ready to reinstall.
 - Frame is 160x90 rather than the panel's full 200 width. See the memory budget.
-- `MIN_DWELL_MS` is 60s, so repeated manual taps are ignored while testing.
+- `MIN_DWELL_MS` gates how often a tap can start a play burst.

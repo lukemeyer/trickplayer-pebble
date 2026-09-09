@@ -166,11 +166,18 @@ export function stripAt(k) {
 	return stripBitmap;
 }
 
-// The single entry point every trigger funnels through. Returns true if the
-// display actually moved.
-export function advance(reason, now) {
-	const t = now === undefined ? Date.now() : now;
-	if (t - lastAdvance < MIN_DWELL_MS) return false;
+// The single entry point every trigger funnels through.
+//
+// Returns "cue"   — moved within the current scene: text only, frame unchanged
+//         "scene" — retired a scene: the picture changes
+//         false   — refused (rate limited, or nothing buffered)
+//
+// `force` skips the dwell check. Only the play burst uses it: the burst is
+// already bounded in length and was itself started by a rate-limited tap, so
+// applying the dwell again would just stall it.
+export function advance(reason, force) {
+	const t = Date.now();
+	if (!force && t - lastAdvance < MIN_DWELL_MS) return false;
 
 	const s = ring[cursorScene];
 	if (!s) {
@@ -181,8 +188,10 @@ export function advance(reason, now) {
 
 	lastAdvance = t;
 
+	let kind = "scene";
 	if (cursorCue + 1 < s.cues.length) {
 		cursorCue++;                       // text-only: no new bitmap, no radio
+		kind = "cue";
 	} else {
 		// Cues exhausted — retire the scene whatever the ring depth.
 		//
@@ -201,9 +210,16 @@ export function advance(reason, now) {
 	}
 
 	savePos();
-	onChange(reason);
+	onChange(reason, kind);
 	maybeRefill();
-	return true;
+	return kind;
+}
+
+// True while the current scene still has unshown cues — i.e. a play burst has
+// somewhere left to go without crossing a scene boundary.
+export function hasMoreCues() {
+	const s = ring[cursorScene];
+	return !!s && cursorCue + 1 < s.cues.length;
 }
 
 export function maybeRefill() {

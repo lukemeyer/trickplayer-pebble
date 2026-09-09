@@ -168,6 +168,8 @@ export function draw(date) {
 }
 
 // Everything below the frame band, clipped so the frame is untouched.
+export function drawBelow(date) { drawBelowFrame(date || new Date()); }
+
 function drawBelowFrame(now) {
 	const top = LAYOUT.frameY + FH;
 	const h = render.height - top;

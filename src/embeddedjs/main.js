@@ -50,9 +50,12 @@ function updateStatus() {
 
 // ------------------------------------------------------------------- wiring
 scenes.init({
-	onChange() {
+	onChange(reason, kind) {
 		advances++;
-		face.draw();
+		// A cue change leaves the picture alone, so repaint only the bands below
+		// it. That matters most during a play burst, which redraws at 1 Hz.
+		if (kind === "cue") face.drawBelow();
+		else face.draw();
 	},
 	onNeedScenes(fromIdx, count) {
 		if (lowPower()) {
@@ -108,6 +111,59 @@ try {
 	trace(`battery unavailable (${e}); power guard disabled\n`);
 }
 
+// ------------------------------------------------------------- play burst
+// A tap plays the rest of the current scene rather than stepping one cue.
+//
+// This is why it is worth doing: all of Alloy's time events share ONE timer
+// whose period is the finest unit subscribed (global.js #schedule), so having
+// "secondchange" subscribed makes the watch wake every second instead of every
+// minute. Subscribing for the length of a burst and unsubscribing straight after
+// buys the playback without paying 1 Hz all day —
+// removeEventListener() re-runs #schedule() and the timer drops back to 60 s.
+//
+// The burst stops at a scene boundary: crossing one costs a fetch, and that
+// should stay a deliberate act rather than something a burst does on its own.
+const PLAY_MAX_MS = 10000;
+
+// Seconds per cue during a burst. The tick is 1 Hz because that is the finest
+// unit Alloy offers, but advancing every tick reads far too fast — real subtitle
+// cues run 2-4 s. Stepping every other tick lands near reading pace and halves
+// the redraws.
+const PLAY_TICKS_PER_CUE = 2;
+
+let playing = false;
+let playUntil = 0;
+let playTick = 0;
+
+function onSecond() {
+	if (Date.now() >= playUntil || !scenes.hasMoreCues()) {
+		stopPlay();
+		return;
+	}
+	if (++playTick % PLAY_TICKS_PER_CUE) return;    // hold this cue a beat longer
+	scenes.advance("play", true);   // force: the burst is already bounded
+	trace("play step\n");          // constant string: no slot churn at 1 Hz
+	updateStatus();
+}
+
+function startPlay() {
+	if (playing) { playUntil = Date.now() + PLAY_MAX_MS; return; }
+	if (!scenes.hasMoreCues()) return;      // nothing to play through
+	playing = true;
+	playTick = 0;
+	playUntil = Date.now() + PLAY_MAX_MS;
+	// NB: this fires the handler immediately, which is the first step of the
+	// burst rather than a wasted tick.
+	watch.addEventListener("secondchange", onSecond);
+}
+
+function stopPlay() {
+	if (!playing) return;
+	playing = false;
+	watch.removeEventListener("secondchange", onSecond);
+	trace("play: stopped, back to minute ticks\n");
+}
+
 // Every trigger funnels through scenes.advance(), which owns the rate limit — so
 // a source added later cannot bypass it.
 function fire(reason) {
@@ -116,7 +172,7 @@ function fire(reason) {
 	const moved = scenes.advance(reason);
 	trace(moved ? "advance\n" : "advance ignored\n");
 	updateStatus();
-	face.draw();
+	if (moved) startPlay();
 }
 
 // Prime the ring; resumes at the persisted position rather than restarting the
