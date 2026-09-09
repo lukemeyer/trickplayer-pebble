@@ -38,8 +38,12 @@
 // The total stays at 94,208: that is what leaves the C side the ~28 KB
 // AppMessage needs, and it is not negotiable (see above).
 #define XS_STACK  8192
-#define XS_SLOT   36864
-#define XS_CHUNK  49152
+// Weighted toward SLOT. Chunk demand became fixed and small once scenes
+// reassemble into one pre-allocated buffer (strip 800 + scene 7,200 = 8,000),
+// whereas slot exhaustion is what actually aborts: "# Slot allocation: failed
+// in fixed size heap" right after a scene arrives.
+#define XS_SLOT   45056
+#define XS_CHUNK  40960
 
 int main(void) {
   Window *w = window_create();

@@ -44,6 +44,19 @@ function panelH() {
 	return render.unobstructed ? render.unobstructed.height : render.height;
 }
 
+// Wrapped-line cache. Re-wrapping allocates a words array plus a substring per
+// word, and draw() runs on every advance AND every minute tick — that churn is
+// paid out of the slot heap, which is the one that runs out.
+let wrapCacheKey = null;
+let wrapCacheLines = [];
+
+function wrapCached(text, font, maxW, maxLines) {
+	if (text === wrapCacheKey) return wrapCacheLines;
+	wrapCacheKey = text;
+	wrapCacheLines = wrap(text, font, maxW, maxLines);
+	return wrapCacheLines;
+}
+
 // Greedy wrap. Subtitle lines are short, so this stays cheap.
 function wrap(text, font, maxW, maxLines) {
 	if (!text) return [];
@@ -107,7 +120,7 @@ function paintSubtitle() {
 	const cur = scenes.current();
 	const maxW = render.width - LAYOUT.inset * 2;
 	const text = cur ? cur.cue : scenes.lastCue();
-	const lines = wrap(text, fontSub, maxW, 3);
+	const lines = wrapCached(text, fontSub, maxW, 3);
 	let y = LAYOUT.subY;
 	for (const line of lines) {
 		const w = render.getTextWidth(line, fontSub);

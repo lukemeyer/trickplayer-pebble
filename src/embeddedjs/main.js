@@ -43,8 +43,9 @@ function updateStatus() {
 	let flag = "";
 	if (!connected()) flag = " [offline]";
 	else if (lowPower()) flag = " [low pwr]";
-	face.setStatus(
-		`${where}  ring ${RING_SIZE - scenes.freeSlots()}/${RING_SIZE}  adv ${advances}${flag}`);
+	// Plain concatenation of short pieces; see fire() on why this path avoids
+	// building more strings than it must.
+	face.setStatus(where + "  adv " + advances + flag);
 }
 
 // ------------------------------------------------------------------- wiring
@@ -110,8 +111,10 @@ try {
 // Every trigger funnels through scenes.advance(), which owns the rate limit — so
 // a source added later cannot bypass it.
 function fire(reason) {
+	// No template literal here: fire() runs on every tap and each interpolated
+	// string is slot-heap garbage. The slot heap is the one that aborts.
 	const moved = scenes.advance(reason);
-	trace(`trigger ${reason} -> ${moved ? "advanced" : "ignored"}\n`);
+	trace(moved ? "advance\n" : "advance ignored\n");
 	updateStatus();
 	face.draw();
 }

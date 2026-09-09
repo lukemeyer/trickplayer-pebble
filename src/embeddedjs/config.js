@@ -51,7 +51,7 @@ export const palBytes = (w, h) => palStride(w) * h;
 // whole. A full-frame scratch is 22,400 B and was the single biggest allocation
 // in the app; one strip is 3,200 B, buying back ~19 KB of chunk for ring depth.
 // 112 / 16 = 7 strips exactly.
-export const STRIP_H = 15;          // 90 / 15 = 6 strips exactly
+export const STRIP_H = 5;           // 90 / 5 = 18 strips; buffer 160x5 = 800 B
 export const STRIP_COUNT = FH / STRIP_H;
 
 // ------------------------------------------------------------------- ring

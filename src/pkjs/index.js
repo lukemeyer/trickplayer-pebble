@@ -24,7 +24,11 @@ var PACKED_BYTES = PAL_STRIDE * FH;  // 7,200
 
 // Payload bytes per message. The watch opens a 2048-byte inbox; leave room for
 // the other tuples and dictionary overhead.
-var CHUNK = 1024;
+//
+// Raised from 1024: every chunk costs the watch a Uint8Array wrapper and a Map
+// in its SLOT heap, and slot exhaustion — not chunk — is what aborts it. 1600
+// takes a 7,200 B scene from 8 messages to 5.
+var CHUNK = 1600;
 
 var sending = false;
 var queue = [];

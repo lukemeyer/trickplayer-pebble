@@ -12,15 +12,16 @@
 
 import {
 	FW, FH, FMT_ARGB2222, RING_SIZE, MIN_DWELL_MS, REFILL_AT_FREE,
-	palStride, STRIP_H, STRIP_COUNT,
+	palStride, palBytes, STRIP_H, STRIP_COUNT,
 } from "config";
 import Bitmap from "commodetto/Bitmap";
 
-const ring = [];          // newest last; each { idx, tsMs, cues[], packed, pal }
+const ring = [];          // metadata only: { idx, tsMs, cues[] }. Pixels are in packedBuf.
 let cursorScene = 0;      // index into ring
 let cursorCue = 0;        // index into ring[cursorScene].cues
 let lastAdvance = 0;
 let lastCueText = "";   // survives retirement so the band keeps its text
+let frameValid = false; // false while packedBuf is being overwritten
 
 // One strip buffer for the whole app. A full-frame ARGB2222 scratch is 22,400 B
 // and was the largest allocation in the app; a 200x16 strip is 3,200 B. Both the
@@ -33,6 +34,20 @@ let lastCueText = "";   // survives retirement so the band keeps its text
 const strip = new ArrayBuffer(FW * STRIP_H);
 const stripU8 = new Uint8Array(strip);
 const stripBitmap = new Bitmap(FW, STRIP_H, FMT_ARGB2222, strip, 0);
+
+// THE scene buffer. Allocated once, reused forever.
+//
+// Previously each arriving scene allocated its own 7,200-byte array, so peak use
+// depended on GC timing and on whether the outgoing scene had been collected
+// yet. That is what made "memory full" intermittent rather than reproducible:
+// the budget is tight enough that a transient second buffer sometimes fits and
+// sometimes does not.
+//
+// Reassembling into a fixed buffer makes frame memory constant. It also pins
+// RING_SIZE to 1 — there is exactly one buffer — which is what the memory budget
+// allows anyway.
+const packedBuf = new Uint8Array(palBytes(FW, FH));
+const palBuf = new Uint8Array(16);
 
 let onChange = () => {};
 let onNeedScenes = () => {};
@@ -84,6 +99,7 @@ export function freeSlots() {
 	return RING_SIZE - ring.length;
 }
 
+// scene is metadata only: { idx, tsMs, cues }. Pixels are already in packedBuf.
 export function push(scene) {
 	if (ring.length >= RING_SIZE) return false;
 	ring.push(scene);
@@ -107,8 +123,24 @@ export function current() {
 }
 
 export function hasFrame() {
-	const s = ring[cursorScene];
-	return !!(s && s.packed);
+	return !!ring[cursorScene] && frameValid;
+}
+
+// Hand the shared buffers to the transport to fill in place.
+export function receiveBuffers() {
+	return { packed: packedBuf, pal: palBuf };
+}
+
+// Called before the first chunk: the buffer is about to be overwritten, so what
+// is in it no longer matches the scene on screen. The panel keeps showing the
+// old pixels (face.js does not repaint the band), which is exactly what we want
+// while the replacement streams in.
+export function beginReceive() {
+	frameValid = false;
+}
+
+export function commitReceive() {
+	frameValid = true;
 }
 
 export { STRIP_H, STRIP_COUNT };
@@ -117,11 +149,10 @@ export { STRIP_H, STRIP_COUNT };
 // Bitmap over it. The caller draws it before asking for the next strip — the
 // buffer is reused, so the previous strip's pixels are gone once this returns.
 export function stripAt(k) {
-	const s = ring[cursorScene];
-	if (!s || !s.packed) return null;
+	if (!ring[cursorScene] || !frameValid) return null;
 
 	const stride = palStride(FW);
-	const packed = s.packed, pal = s.pal;
+	const packed = packedBuf, pal = palBuf;
 	const y0 = k * STRIP_H;
 
 	for (let row = 0; row < STRIP_H; row++) {
@@ -184,33 +215,3 @@ export function maybeRefill() {
 	}
 }
 
-// Phase 1 only: a stand-in scene so the layout and trigger path can be exercised
-// before the transport exists. Phase 2 replaces this with bytes from PKJS.
-export function pushPlaceholder(idx) {
-	const stride = palStride(FW);
-	const packed = new Uint8Array(stride * FH);
-	const pal = new Uint8Array(16);
-	for (let i = 0; i < 16; i++) {
-		// a spread across the 64-colour space so the layout is obviously alive
-		const r = i & 3, g = (i >> 2) & 3, b = 3 - (i & 3);
-		pal[i] = 0xc0 | (r << 4) | (g << 2) | b;
-	}
-	for (let y = 0; y < FH; y++) {
-		for (let x = 0; x < FW; x++) {
-			const v = ((x + idx * 8) >> 3 ^ y >> 3) & 15;
-			const o = y * stride + (x >> 1);
-			packed[o] |= (x & 1) ? v : v << 4;
-		}
-	}
-	return push({
-		idx,
-		tsMs: idx * 10000,
-		cues: [
-			`placeholder scene ${idx}`,
-			"second cue in this scene",
-			"third cue - no radio used",
-		],
-		packed,
-		pal,
-	});
-}

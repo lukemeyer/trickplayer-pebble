@@ -15,6 +15,7 @@
 
 import Message from "pebble/message";
 import { FW, FH, palBytes } from "config";
+import * as scenes from "scenes";
 
 const KEYS = [
 	"Hello", "SceneReq", "SceneIdx", "SceneSeq", "SceneTotal", "SceneData",
@@ -99,13 +100,17 @@ function handle(map) {
 	const data = new Uint8Array(map.get("SceneData"));
 
 	if (!pending || pending.idx !== idx || seq === 0) {
-		pending = { idx, u8: new Uint8Array(palBytes(FW, FH)), off: 0, total };
+		// Reassemble straight into the shared scene buffer rather than allocating
+		// a fresh 7,200-byte array per scene — that transient second buffer is
+		// what made "memory full" intermittent.
+		scenes.beginReceive();
+		pending = { idx, u8: scenes.receiveBuffers().packed, off: 0, total };
 	}
 
 	// Guard against a dropped chunk: without in-order arrival the offset is
 	// meaningless, so abandon the scene rather than assemble garbage.
 	if (seq !== 0 && pending.off === 0) {
-		trace(`proto: scene ${idx} chunk ${seq} without a start; dropping\n`);
+		trace("proto: chunk without a start; dropping scene\n");
 		pending = null;
 		return;
 	}
@@ -117,20 +122,24 @@ function handle(map) {
 
 	if (seq + 1 < total) return;
 
-	const palBuf = map.has("ScenePal") ? new Uint8Array(map.get("ScenePal")) : null;
+	if (!map.has("ScenePal")) {
+		trace("proto: scene arrived without a palette; dropping\n");
+		pending = null;
+		return;
+	}
+
+	// Copy the palette into the shared buffer too — 16 bytes, no allocation.
+	const incoming = new Uint8Array(map.get("ScenePal"));
+	const pal = scenes.receiveBuffers().pal;
+	for (let i = 0; i < 16 && i < incoming.length; i++) pal[i] = incoming[i];
+
 	const cues = map.has("SceneCues") ? String(map.get("SceneCues")) : "";
 	const scene = {
 		idx,
 		tsMs: map.has("SceneTsMs") ? map.get("SceneTsMs") : 0,
 		cues: cues ? cues.split("\n") : [],
-		packed: pending.u8,
-		pal: palBuf,
 	};
 	pending = null;
-
-	if (!scene.pal) {
-		trace(`proto: scene ${idx} arrived without a palette; dropping\n`);
-		return;
-	}
+	scenes.commitReceive();
 	onScene(scene);
 }
