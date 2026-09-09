@@ -16,7 +16,7 @@ const { URL } = require("url");
 const fs = require("fs");
 const path = require("path");
 
-const bif = require("../../src/pkjs/bif.js");
+const timeline = require("../../src/pkjs/timeline.js");
 const jpeg = require("../../src/pkjs/jpeg.js");
 const render = require("../../src/pkjs/render.js");
 
@@ -58,13 +58,13 @@ function getRange(from, to) {
 	const t0 = Date.now();
 
 	const head = await getRange(0, 63);
-	const header = bif.parseHeader(head);
+	const header = timeline.parseHeader(head);
 	console.log(`BIF v${header.version}  ${header.count} frames  ` +
 		`multiplier ${header.multiplier}ms  index ${header.indexBytes}B`);
 
 	const idxBytes = await getRange(0, header.indexBytes - 1);
-	const index = bif.parseIndex(idxBytes, header);
-	const picked = bif.pickFrames(index, SCENE_INTERVAL_MS);
+	const index = timeline.parseIndex(idxBytes, header);
+	const picked = timeline.pickFrames(index, SCENE_INTERVAL_MS);
 	console.log(`duration ~${(index[index.length - 1].tsMs / 60000).toFixed(1)} min  ` +
 		`native spacing ${index[1].tsMs - index[0].tsMs}ms  ` +
 		`-> ${picked.length} scenes at ${SCENE_INTERVAL_MS}ms`);

@@ -271,7 +271,7 @@
 				(p.Stream || []).forEach(function (st) {
 					if (st.streamType === 3 && st.codec === "srt" && st.key && !sub) sub = st;
 				});
-				if (sub && !out) out = { partId: p.id, subKey: sub.key, subLang: sub.language || "" };
+				if (sub && !out) out = { timelineRef: p.id, subtitleRef: sub.key, subLang: sub.language || "" };
 			});
 		});
 		return out;
@@ -318,7 +318,7 @@
 		var m = document.createElement("span");
 		m.className = "meta";
 		m.textContent = "subtitles: " + (streams.subLang || "unknown") +
-			" · part " + streams.partId;
+			" · part " + streams.timelineRef;
 		li.appendChild(m);
 
 		li.addEventListener("click", function () {
@@ -326,8 +326,8 @@
 			for (var i = 0; i < all.length; i++) all[i].classList.remove("sel");
 			li.classList.add("sel");
 			state.chosen = {
-				partId: streams.partId,
-				subKey: streams.subKey,
+				timelineRef: streams.timelineRef,
+				subtitleRef: streams.subtitleRef,
 				title: titleOf(meta),
 				durMs: meta.duration || 0
 			};
@@ -356,8 +356,8 @@
 			v: 1,
 			server: state.server.replace(/\/$/, ""),
 			token: state.token,
-			partId: state.chosen.partId,
-			subKey: state.chosen.subKey,
+			timelineRef: state.chosen.timelineRef,
+			subtitleRef: state.chosen.subtitleRef,
 			title: state.chosen.title,
 			durMs: state.chosen.durMs,
 			opts: {

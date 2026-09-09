@@ -48,8 +48,8 @@ function saveLru() {
 // and replaying them would resurrect the duplicate-frame bug.
 var SCHEMA = 2;
 
-function setProfile(partId, w, h, depth) {
-	profile = SCHEMA + "." + partId + "." + w + "x" + h + "." + depth;
+function setProfile(timelineRef, w, h, depth) {
+	profile = SCHEMA + "." + timelineRef + "." + w + "x" + h + "." + depth;
 }
 
 function keyFor(sceneIdx) {

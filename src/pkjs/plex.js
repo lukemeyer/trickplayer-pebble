@@ -78,15 +78,15 @@ function getRange(url, from, to, cb) {
 	try { xhr.send(); } catch (e2) { cb(e2); }
 }
 
-function bifUrl(cfg) {
-	return cfg.server + "/library/parts/" + cfg.partId +
+function timelineUrl(cfg) {
+	return cfg.server + "/library/parts/" + cfg.timelineRef +
 		"/indexes/sd?X-Plex-Token=" + cfg.token;
 }
 
 if (typeof module !== "undefined") {
 	module.exports = {
 		getRange: getRange,
-		bifUrl: bifUrl,
+		timelineUrl: timelineUrl,
 		isRangeSupported: function () { return rangeSupported; }
 	};
 }

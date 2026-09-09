@@ -38,7 +38,7 @@ function log(s) { console.log("[pkjs] " + s); }
 
 // ------------------------------------------------------------------- plex
 var plex = require("./plex.js");
-var bif = require("./bif.js");
+var timeline = require("./timeline.js");
 var jpegLib = require("./jpeg.js");
 var render = require("./render.js");
 
@@ -51,12 +51,26 @@ var CONFIG_URL = "https://lukemeyer.github.io/trickplayer-pebble/config/";
 // Saved settings win over the dev file: local-config.js only exists so the
 // pipeline could be built and tested before the config page did.
 var cfg = null;
+
+// Settings saved by a build from before the Trickplayer vocabulary rename use
+// the old key names. Accept them rather than silently ignoring a perfectly good
+// stored config and dropping the user back to synthetic scenes.
+//
+// The localStorage KEY ("bif.settings") deliberately does not change: renaming
+// it would orphan exactly the settings this is here to rescue.
+function migrateCfg(c) {
+	if (!c) return c;
+	if (c.timelineRef === undefined && c.partId !== undefined) c.timelineRef = c.partId;
+	if (c.subtitleRef === undefined && c.subKey !== undefined) c.subtitleRef = c.subKey;
+	return c;
+}
+
 function loadCfg() {
 	try {
 		var raw = localStorage.getItem("bif.settings");
 		if (raw) {
-			var c = JSON.parse(raw);
-			if (c && c.server && c.token && c.partId) {
+			var c = migrateCfg(JSON.parse(raw));
+			if (c && c.server && c.token && c.timelineRef) {
 				log("config: " + (c.title || "saved settings"));
 				return c;
 			}
@@ -78,7 +92,7 @@ if (cfg && cfg.opts && typeof cfg.opts.skipSilent === "boolean") SKIP_SILENT_CFG
 var subsLib = require("./subs.js");
 var cache = require("./cache.js");
 
-if (cfg) cache.setProfile(cfg.partId, FW, FH, 4);
+if (cfg) cache.setProfile(cfg.timelineRef, FW, FH, 4);
 
 var index = null;      // parsed BIF index
 var picked = null;     // frame indices chosen at SCENE_INTERVAL_MS
@@ -89,9 +103,9 @@ var loading = false;
 // parses in about a millisecond) that it is worth having in full: it is what
 // makes most advances text-only.
 function loadSubs(cb) {
-	if (cues || !cfg || !cfg.subKey) { cb(null); return; }
-	var url = cfg.server + cfg.subKey +
-		(cfg.subKey.indexOf("?") === -1 ? "?" : "&") + "X-Plex-Token=" + cfg.token;
+	if (cues || !cfg || !cfg.subtitleRef) { cb(null); return; }
+	var url = cfg.server + cfg.subtitleRef +
+		(cfg.subtitleRef.indexOf("?") === -1 ? "?" : "&") + "X-Plex-Token=" + cfg.token;
 	plex.getRange(url, null, null, function (err, bytes) {
 		if (err) { log("subs failed: " + err.message); cb(null); return; }
 		var s = "";
@@ -118,11 +132,11 @@ function loadIndex(cb) {
 	if (loading) { cb(new Error("busy")); return; }
 	loading = true;
 
-	var url = plex.bifUrl(cfg);
+	var url = plex.timelineUrl(cfg);
 	plex.getRange(url, 0, 63, function (err, head) {
 		if (err) { loading = false; cb(err); return; }
 		var header;
-		try { header = bif.parseHeader(head); }
+		try { header = timeline.parseHeader(head); }
 		catch (e) { loading = false; cb(e); return; }
 
 		log("BIF " + header.count + " frames, multiplier " + header.multiplier + "ms");
@@ -130,8 +144,8 @@ function loadIndex(cb) {
 			loading = false;
 			if (err2) { cb(err2); return; }
 			try {
-				index = bif.parseIndex(idxBytes, header);
-				picked = bif.pickFrames(index, SCENE_INTERVAL_MS);
+				index = timeline.parseIndex(idxBytes, header);
+				picked = timeline.pickFrames(index, SCENE_INTERVAL_MS);
 			} catch (e2) { cb(e2); return; }
 			log("index ready: " + picked.length + " scenes");
 			cb(null);
@@ -194,7 +208,7 @@ function makeRealScene(sceneIdx, cb, attempt) {
 		var pick = (startPickFor(sceneIdx) + attempt) % picked.length;
 		var fi = picked[pick];
 		var ent = index[fi];
-		var url = plex.bifUrl(cfg);
+		var url = plex.timelineUrl(cfg);
 
 		plex.getRange(url, ent.offset, ent.offset + ent.length - 1, function (e2, jpgBytes) {
 			if (e2) { cb(e2); return; }
@@ -429,9 +443,9 @@ Pebble.addEventListener("showConfiguration", function () {
 Pebble.addEventListener("webviewclosed", function (e) {
 	if (!e || !e.response) { log("config cancelled"); return; }
 	var c;
-	try { c = JSON.parse(decodeURIComponent(e.response)); }
+	try { c = migrateCfg(JSON.parse(decodeURIComponent(e.response))); }
 	catch (err) { log("config payload unreadable: " + err.message); return; }
-	if (!c.server || !c.token || !c.partId) { log("config payload incomplete"); return; }
+	if (!c.server || !c.token || !c.timelineRef) { log("config payload incomplete"); return; }
 
 	try { localStorage.setItem("bif.settings", JSON.stringify(c)); }
 	catch (err2) { log("could not save settings: " + err2.message); }
@@ -446,10 +460,10 @@ Pebble.addEventListener("webviewclosed", function (e) {
 		if (typeof c.opts.skipSilent === "boolean") SKIP_SILENT = c.opts.skipSilent;
 	}
 	// Re-key the cache so frames from the previous episode are never served.
-	cache.setProfile(c.partId, FW, FH, 4);
+	cache.setProfile(c.timelineRef, FW, FH, 4);
 	lastServed = 0;
 	prefetchNext = -1;
-	log("configured: " + (c.title || c.partId) + ", scene interval " +
+	log("configured: " + (c.title || c.timelineRef) + ", scene interval " +
 		SCENE_INTERVAL_MS + "ms");
 });
 

@@ -49,14 +49,14 @@ src/embeddedjs/
 src/pkjs/
   index.js                lifecycle, scene assembly, chunked sender
   plex.js                 ranged GETs, binary-read fallback
-  bif.js                  BIF header/index parsing
+  timeline.js             frame timeline — BIF header/index parsing
   jpeg.js                 baseline JPEG decoder (no decoding exists in PKJS)
   render.js               downscale -> median cut -> dither -> 4bpp pack
   local-config.js         gitignored: dev Plex URL + token
 spikes/                   Phase 0 probes, findings, and tools
 ```
 
-`bif.js`, `jpeg.js` and `render.js` are written to run under both PKJS and Node,
+`timeline.js`, `jpeg.js` and `render.js` are written to run under both PKJS and Node,
 so `spikes/tools/pipeline.js` exercises the exact shipping code against a real
 server, and `spikes/tools/test_jpeg.js` validates the decoder against `sips`.
 
