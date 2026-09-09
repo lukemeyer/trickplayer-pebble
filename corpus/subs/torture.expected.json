@@ -1,0 +1,86 @@
+{
+  "note": "Hand-derived from the subtitle rules in PLAN.md §3, not from any implementation. Tags and ASS override blocks are removed rather than escaped, and no cue ever loses a word.",
+  "dropsEmptyCues": true,
+  "cueCount": 8,
+  "cues": [
+    {
+      "startMs": 1000,
+      "endMs": 3000,
+      "text": "Plain line."
+    },
+    {
+      "startMs": 4500,
+      "endMs": 6000,
+      "text": "Italic dialogue."
+    },
+    {
+      "startMs": 7000,
+      "endMs": 9000,
+      "text": "Top-positioned line."
+    },
+    {
+      "startMs": 10000,
+      "endMs": 12000,
+      "text": "Two lines\nin one cue."
+    },
+    {
+      "startMs": 10500,
+      "endMs": 12000,
+      "text": "No hours field, dot separator."
+    },
+    {
+      "startMs": 20000,
+      "endMs": 22000,
+      "text": "Font tag and bold."
+    },
+    {
+      "startMs": 30000,
+      "endMs": 34000,
+      "text": "Supercalifragilisticexpialidocious antidisestablishmentarianism"
+    },
+    {
+      "startMs": 40000,
+      "endMs": 42000,
+      "text": "Cue settings after the timestamp."
+    }
+  ],
+  "cuesInWindow": [
+    {
+      "fromMs": 0,
+      "toMs": 10000,
+      "expectStartMs": [
+        1000,
+        4500,
+        7000
+      ]
+    },
+    {
+      "fromMs": 10000,
+      "toMs": 20000,
+      "expectStartMs": [
+        10000,
+        10500
+      ]
+    },
+    {
+      "fromMs": 20000,
+      "toMs": 30000,
+      "expectStartMs": [
+        20000
+      ]
+    },
+    {
+      "fromMs": 30000,
+      "toMs": 50000,
+      "expectStartMs": [
+        30000,
+        40000
+      ]
+    }
+  ],
+  "parserNotes": {
+    "crlf": "input is CRLF; a parser must normalise before splitting on blank lines, or every block keeps a trailing \\r and no timestamp matches",
+    "ordering": "cue 5 has no hours field and starts at 10500, so it sorts BETWEEN cues 4 and 6. A parser that trusts file order rather than sorting by startMs still passes this fixture; one that mis-parses the missing hours field puts it at 630000 and fails the window assertions.",
+    "cueSettings": "cue 9's end timestamp is followed by WebVTT-style cue settings on the same line. They must be discarded, not parsed as part of the time."
+  }
+}

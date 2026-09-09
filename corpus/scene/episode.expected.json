@@ -1,0 +1,86 @@
+{
+  "note": "Computed by a second implementation of the rules living in tools/corpus/make-corpus.js, sharing no code with the Timeline Tuner. check-corpus.js asserts the tuner agrees; a disagreement means one of the two is wrong, which is the whole point.",
+  "groundTruth": {
+    "frameCount": 1815,
+    "nearBlankFrames": 9,
+    "duplicateFrames": 1429,
+    "duplicateShare": 0.7873,
+    "cueCount": 569,
+    "durationMs": 3630000
+  },
+  "cases": {
+    "interval-10s-no-dedup": {
+      "params": {
+        "mode": "interval",
+        "intervalMs": 10000,
+        "blankThresholdPct": 15,
+        "skipDuplicates": false,
+        "removeEmpty": false
+      },
+      "expect": {
+        "usableFrames": 1802,
+        "sceneCount": 363,
+        "emptyScenesBeforeRemoval": 121,
+        "uniqueFramesShipped": 361,
+        "sceneBytes": 1974579,
+        "totalBytes": 9938460,
+        "avgCuesPerScene": 1.5675,
+        "medianFrameLength": 5466
+      }
+    },
+    "native-timings-no-dedup": {
+      "params": {
+        "mode": "frameTimings",
+        "blankThresholdPct": 15,
+        "skipDuplicates": false,
+        "removeEmpty": false
+      },
+      "expect": {
+        "usableFrames": 1802,
+        "sceneCount": 1802,
+        "emptyScenesBeforeRemoval": 1245,
+        "uniqueFramesShipped": 1802,
+        "sceneBytes": 9929398,
+        "totalBytes": 9938460,
+        "avgCuesPerScene": 0.3119,
+        "medianFrameLength": 5466
+      }
+    },
+    "native-timings-dedup": {
+      "params": {
+        "mode": "frameTimings",
+        "blankThresholdPct": 15,
+        "skipDuplicates": true,
+        "removeEmpty": false
+      },
+      "expect": {
+        "usableFrames": 384,
+        "sceneCount": 384,
+        "emptyScenesBeforeRemoval": 167,
+        "uniqueFramesShipped": 384,
+        "sceneBytes": 2102585,
+        "totalBytes": 9938460,
+        "avgCuesPerScene": 1.4635,
+        "medianFrameLength": 5466
+      }
+    },
+    "native-timings-dedup-drop-empty": {
+      "params": {
+        "mode": "frameTimings",
+        "blankThresholdPct": 15,
+        "skipDuplicates": true,
+        "removeEmpty": true
+      },
+      "expect": {
+        "usableFrames": 384,
+        "sceneCount": 217,
+        "emptyScenesBeforeRemoval": 167,
+        "uniqueFramesShipped": 217,
+        "sceneBytes": 1179728,
+        "totalBytes": 9938460,
+        "avgCuesPerScene": 2.5899,
+        "medianFrameLength": 5466
+      }
+    }
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "note": "Hand-derived from the BIF rules, not from any implementation. multiplierMs is 1000 because the file stores 0; the last frame's length comes from the sentinel entry, not the file size.",
+  "magicOk": true,
+  "version": 0,
+  "frameCount": 12,
+  "multiplierMs": 1000,
+  "rawMultiplierInFile": 0,
+  "indexByteLength": 104,
+  "fileByteLength": 1282,
+  "frames": [
+    {
+      "index": 0,
+      "tsMs": 0,
+      "offset": 168,
+      "length": 8
+    },
+    {
+      "index": 1,
+      "tsMs": 2000,
+      "offset": 176,
+      "length": 100
+    },
+    {
+      "index": 2,
+      "tsMs": 4000,
+      "offset": 276,
+      "length": 100
+    },
+    {
+      "index": 3,
+      "tsMs": 6000,
+      "offset": 376,
+      "length": 100
+    },
+    {
+      "index": 4,
+      "tsMs": 8000,
+      "offset": 476,
+      "length": 100
+    },
+    {
+      "index": 5,
+      "tsMs": 10000,
+      "offset": 576,
+      "length": 100
+    },
+    {
+      "index": 6,
+      "tsMs": 12000,
+      "offset": 676,
+      "length": 100
+    },
+    {
+      "index": 7,
+      "tsMs": 14000,
+      "offset": 776,
+      "length": 120
+    },
+    {
+      "index": 8,
+      "tsMs": 16000,
+      "offset": 896,
+      "length": 120
+    },
+    {
+      "index": 9,
+      "tsMs": 18000,
+      "offset": 1016,
+      "length": 120
+    },
+    {
+      "index": 10,
+      "tsMs": 20000,
+      "offset": 1136,
+      "length": 6
+    },
+    {
+      "index": 11,
+      "tsMs": 22000,
+      "offset": 1142,
+      "length": 140
+    }
+  ],
+  "invariant": {
+    "sumFrameLengths": 1114,
+    "headerPlusIndex": 168,
+    "equalsFileLength": true
+  },
+  "duplicateOf": [
+    null,
+    null,
+    null,
+    null,
+    3,
+    3,
+    3,
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  "rejects": {
+    "notBif": "a buffer whose first 8 bytes are not the BIF magic must throw",
+    "truncatedHeader": "fewer than 64 bytes must throw",
+    "truncatedIndex": "fewer than 64 + 8*(count+1) bytes must throw"
+  }
+}

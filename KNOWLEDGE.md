@@ -37,3 +37,21 @@ different across the three and are not worth unifying.
 Domain terms are standardized across all three repos. `Timeline` (not
 `BifIndex`), `FrameRef`, `timelineRef`, `itemId`, `subtitleRef`, `scene`
 (not `chunk`). See `PLAN.md` §7, Phase 0.
+
+## Conformance corpus
+
+`corpus/` is **vendored** from `trickplayer-knowledge` — never edit it here.
+Refresh it by running that repo's `tools/corpus/sync-corpus.sh`, which also has
+a `--check` mode that reports drift.
+
+```bash
+node spikes/tools/conformance.js
+```
+
+Runs the shipping `src/pkjs` modules against the shared fixtures. This works
+only because `timeline.js` and `subs.js` are written to run under both PKJS and
+Node — a decision made so the pipeline could be exercised against a real server
+with no watch attached, and now load-bearing for a second reason.
+
+A `SKIP` line is not a pass. It records a rule this platform does not implement
+yet, with a pointer to where that is tracked.

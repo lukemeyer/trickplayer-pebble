@@ -1,0 +1,159 @@
+{
+  "note": "Hand-written expectations for F-002. maxCharsPerLine and maxLinesPerPage are deliberately arbitrary here: the real values are screen measurements each platform makes for itself, and are NOT part of the shared rule. What is shared is that no word is ever lost.",
+  "cases": [
+    {
+      "name": "plain wrap",
+      "text": "The quick brown fox jumps over the lazy dog",
+      "maxCharsPerLine": 16,
+      "maxLinesPerPage": 2,
+      "expectLines": [
+        "The quick brown",
+        "fox jumps over",
+        "the lazy dog"
+      ],
+      "expectPages": [
+        [
+          "The quick brown",
+          "fox jumps over"
+        ],
+        [
+          "the lazy dog"
+        ]
+      ],
+      "why": "greedy wrap; 3 lines over a 2-line page means 2 pages, not a cut"
+    },
+    {
+      "name": "word exactly fills the line",
+      "text": "abcdefgh ij",
+      "maxCharsPerLine": 8,
+      "maxLinesPerPage": 0,
+      "expectLines": [
+        "abcdefgh",
+        "ij"
+      ],
+      "expectPages": [
+        [
+          "abcdefgh",
+          "ij"
+        ]
+      ],
+      "why": "a word of exactly maxChars fits and must not hard-break"
+    },
+    {
+      "name": "single word longer than the line hard-breaks",
+      "text": "Supercalifragilisticexpialidocious",
+      "maxCharsPerLine": 10,
+      "maxLinesPerPage": 0,
+      "expectLines": [
+        "Supercalif",
+        "ragilistic",
+        "expialidoc",
+        "ious"
+      ],
+      "expectPages": [
+        [
+          "Supercalif",
+          "ragilistic",
+          "expialidoc",
+          "ious"
+        ]
+      ],
+      "why": "every character still shown, spread over more lines. This is NOT omission — truncating to 'Supercalif…' would be"
+    },
+    {
+      "name": "long word mid-sentence",
+      "text": "say antidisestablishmentarianism now",
+      "maxCharsPerLine": 12,
+      "maxLinesPerPage": 0,
+      "expectLines": [
+        "say",
+        "antidisestab",
+        "lishmentaria",
+        "nism now"
+      ],
+      "expectPages": [
+        [
+          "say",
+          "antidisestab",
+          "lishmentaria",
+          "nism now"
+        ]
+      ],
+      "why": "the in-progress line is flushed before the oversized word breaks"
+    },
+    {
+      "name": "no wrapping when budget is 0",
+      "text": "one two three four five",
+      "maxCharsPerLine": 0,
+      "maxLinesPerPage": 0,
+      "expectLines": [
+        "one two three four five"
+      ],
+      "expectPages": [
+        [
+          "one two three four five"
+        ]
+      ],
+      "why": "0 means unlimited, not zero-width"
+    },
+    {
+      "name": "empty cue",
+      "text": "",
+      "maxCharsPerLine": 10,
+      "maxLinesPerPage": 2,
+      "expectLines": [
+        ""
+      ],
+      "expectPages": [
+        [
+          ""
+        ]
+      ],
+      "why": "never returns an empty list; callers can index [0] unconditionally"
+    },
+    {
+      "name": "collapses runs of whitespace",
+      "text": "spaced    out\n\ntext",
+      "maxCharsPerLine": 20,
+      "maxLinesPerPage": 0,
+      "expectLines": [
+        "spaced out text"
+      ],
+      "expectPages": [
+        [
+          "spaced out text"
+        ]
+      ],
+      "why": "wrapping is over words; the cue's own line breaks are not honoured"
+    },
+    {
+      "name": "three full pages",
+      "text": "a b c d e f g h i j k l",
+      "maxCharsPerLine": 3,
+      "maxLinesPerPage": 2,
+      "expectLines": [
+        "a b",
+        "c d",
+        "e f",
+        "g h",
+        "i j",
+        "k l"
+      ],
+      "expectPages": [
+        [
+          "a b",
+          "c d"
+        ],
+        [
+          "e f",
+          "g h"
+        ],
+        [
+          "i j",
+          "k l"
+        ]
+      ],
+      "why": "pagination is a plain chunk; the last page is not padded"
+    }
+  ]
+}
