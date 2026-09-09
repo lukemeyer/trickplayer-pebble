@@ -234,7 +234,7 @@
 
 	// ------------------------------------------------------------- browse
 	// Eligibility is checked LAZILY, one item at a time as the list is built.
-	// plex-bif-viewer fetched full metadata for every item in the library up
+	// trickplayer-g2 fetched full metadata for every item in the library up
 	// front, in batches of 20 — far too slow on a phone, and most of it wasted.
 	$("browse").addEventListener("click", function () {
 		var sec = currentSection();

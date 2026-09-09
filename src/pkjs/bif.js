@@ -1,6 +1,6 @@
 // BIF (Roku/Plex trick-play index) parsing.
 //
-// Ported from plex-bif-viewer/src/bif.ts, with two corrections found against a
+// Ported from trickplayer-g2/src/bif.ts, with two corrections found against a
 // real Plex file (spikes/PHASE0-FINDINGS.md):
 //
 //   1. The timestamp multiplier at offset 16 is 0 in real Plex output, which per

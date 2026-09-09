@@ -79,7 +79,7 @@ Parser validated: `sum(frame sizes) + index == file size` exactly.
 
 **Two things to get right:**
 
-1. **`timestampMultiplier` (offset 16) is `0`, not 1000.** Per the BIF spec, 0 means "use the 1000 ms default". So it must be read as `mult = readU32(16) || 1000`. `plex-bif-viewer`'s hardcoded `* 1000` is correct here only by luck, and naively *reading* the field — which the plan called for — yields all-zero timestamps and a broken cue→frame mapping.
+1. **`timestampMultiplier` (offset 16) is `0`, not 1000.** Per the BIF spec, 0 means "use the 1000 ms default". So it must be read as `mult = readU32(16) || 1000`. `trickplayer-g2`'s hardcoded `* 1000` is correct here only by luck, and naively *reading* the field — which the plan called for — yields all-zero timestamps and a broken cue→frame mapping.
 
 2. **Frames are 2s apart, not the ~10s the plan assumed.** This matters: the whole "most advances stay inside the same frame, so send ~100 B of text" efficiency argument depends on several subtitle cues sharing a frame. At 2s spacing with ~3s cues, nearly every advance would cross into a new frame and the saving evaporates.
 

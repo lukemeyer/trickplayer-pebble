@@ -1,4 +1,4 @@
-# BIF Watchface (Pebble Time 2 / emery)
+# Trickplayer watchface (Pebble Time 2 / emery)
 
 A Pebble watchface that shows a frame from a Plex BIF trick-play index plus the
 subtitles from that moment, advancing through an episode as you interact with it.
@@ -23,7 +23,7 @@ display-ready bytes. The watch never fetches, by design: raw JPEG would cost
 
 **Running on real hardware** (Pebble Time 2 + Android over `--adb`): real frames
 and synced subtitles, cached and prefetched, advancing on tap. The config page is
-live at <https://lukemeyer.github.io/bif-watchface-pebble/config/>.
+live at <https://lukemeyer.github.io/trickplayer-pebble/config/>.
 
 Outstanding: a battery-life trial, and walking the hosted sign-in flow end to end
 on the phone.
@@ -136,7 +136,7 @@ polling alone:
 - **An explicit "I've authorised it" button**, so nothing depends on a timer.
 - **Manual token entry** remains, collapsed, as the escape hatch.
 
-**Hosted** at <https://lukemeyer.github.io/bif-watchface-pebble/config/>, which
+**Hosted** at <https://lukemeyer.github.io/trickplayer-pebble/config/>, which
 is what `CONFIG_URL` in `src/pkjs/index.js` points at. GitHub Pages serves this
 repo's `main` branch from the root, so `config/` lands at that path directly —
 no build step and no Actions workflow.

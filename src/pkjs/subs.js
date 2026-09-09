@@ -1,6 +1,6 @@
 // SRT parsing.
 //
-// Ported from plex-bif-viewer/src/subtitles.ts. Differences:
+// Ported from trickplayer-g2/src/subtitles.ts. Differences:
 //   * emits "\n" rather than "<br>" — the watch draws plain text
 //   * strips HTML tags, which real Plex sidecars are full of (<i>…</i>)
 //   * no yielding: the original chunked with setTimeout to keep a browser UI

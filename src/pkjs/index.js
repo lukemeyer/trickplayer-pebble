@@ -46,7 +46,7 @@ var SCENE_INTERVAL_MS = 10000;   // scene granularity, independent of BIF spacin
 var SKIP_SILENT_CFG = true;
 
 // Config page URL. Must be hosted over https for the Pebble app's webview.
-var CONFIG_URL = "https://lukemeyer.github.io/bif-watchface-pebble/config/";
+var CONFIG_URL = "https://lukemeyer.github.io/trickplayer-pebble/config/";
 
 // Saved settings win over the dev file: local-config.js only exists so the
 // pipeline could be built and tested before the config page did.
