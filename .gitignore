@@ -1,0 +1,22 @@
+# Build output
+build/
+node_modules/
+.lock-waf*
+.DS_Store
+
+# Logs and run state
+*-logs.txt
+*.log
+.pebble-logs.pid
+
+# ── Secrets ──────────────────────────────────────────────────────────────
+# Holds a Plex server URL and auth token. Never commit.
+src/pkjs/local-config.js
+
+# ── Copyrighted content ──────────────────────────────────────────────────
+# Screenshots and encoded frames are all stills from a TV episode. They are
+# development artefacts, not needed to build or run anything, so they stay out
+# of a public repo. Regenerate with spikes/tools/pipeline.js against your own
+# library.
+shots/
+spikes/phase0-probe/src/embeddedjs/frame*.js

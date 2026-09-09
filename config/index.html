@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>BIF Watchface Settings</title>
+<style>
+  :root {
+    --bg: #1c1c1e; --card: #2c2c2e; --line: #3a3a3c;
+    --fg: #f2f2f7; --muted: #98989f; --accent: #e35205; --ok: #30d158;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f2f2f7; --card:#fff; --line:#d1d1d6; --fg:#1c1c1e; --muted:#6c6c70; }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; padding: 16px 14px 96px;
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg);
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+  .card { background: var(--card); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+             color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  input[type=text], input[type=password], select {
+    width: 100%; padding: 11px 12px; font-size: 16px; border-radius: 9px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+  }
+  button {
+    width: 100%; padding: 13px; font-size: 16px; font-weight: 600; border: 0;
+    border-radius: 10px; background: var(--accent); color: #fff; margin-top: 12px;
+  }
+  button.secondary { background: var(--line); color: var(--fg); }
+  button:disabled { opacity: .45; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  ul.list { list-style: none; margin: 0; padding: 0; max-height: 46vh; overflow-y: auto;
+            border: 1px solid var(--line); border-radius: 9px; }
+  ul.list li { padding: 11px 12px; border-bottom: 1px solid var(--line); font-size: 15px; }
+  ul.list li:last-child { border-bottom: 0; }
+  ul.list li.sel { background: var(--accent); color: #fff; }
+  ul.list li .meta { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+  ul.list li.sel .meta { color: rgba(255,255,255,.8); }
+  .status { font-size: 13px; color: var(--muted); margin-top: 10px; min-height: 18px; }
+  .status.err { color: #ff453a; }
+  .status.ok { color: var(--ok); }
+  .hide { display: none; }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 14px;
+         background: var(--card); border-top: 1px solid var(--line); }
+  .bar button { margin: 0; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .code { font-size: 40px; font-weight: 700; letter-spacing: .18em; text-align: center;
+          margin: 6px 0 2px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  a { text-decoration: none; }
+  details summary::-webkit-details-marker { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<h1>BIF Watchface</h1>
+<p class="sub">Pick an episode. Its trick-play frames and subtitles become your watchface.</p>
+
+<div class="card" id="card-signin">
+  <h2>Sign in to Plex</h2>
+  <div id="pin-idle">
+    <p class="note" style="margin-top:0">
+      You'll get a short code to enter at plex.tv. Nothing is sent anywhere
+      except your own Plex account &mdash; the token stays on this phone.
+    </p>
+    <button id="signin">Sign in with Plex</button>
+  </div>
+
+  <div id="pin-active" class="hide">
+    <div class="code" id="pin-code">&middot;&middot;&middot;&middot;</div>
+    <p class="note" style="text-align:center">
+      Enter this at <strong>plex.tv/link</strong>, or use the button below.
+    </p>
+    <a id="pin-link" href="#" target="_blank" rel="noopener">
+      <button class="secondary" type="button">Open plex.tv to authorise</button>
+    </a>
+    <button id="pin-check">I've authorised it</button>
+    <button id="pin-cancel" class="secondary">Cancel</button>
+  </div>
+
+  <div class="status" id="auth-status"></div>
+</div>
+
+<div class="card hide" id="card-server">
+  <h2>Server</h2>
+  <select id="server-pick"></select>
+  <button id="use-server" class="secondary">Use this server</button>
+  <div class="status" id="server-status"></div>
+</div>
+
+<details class="card" id="card-manual">
+  <summary style="cursor:pointer;font-size:13px;color:var(--muted)">Enter a token manually</summary>
+  <label for="server">Server address</label>
+  <input type="text" id="server" placeholder="https://192.168.1.10:32400" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <label for="token">X-Plex-Token</label>
+  <input type="password" id="token" placeholder="paste token" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <p class="note">
+    A fallback for when sign-in can't complete &mdash; find a token via Get Info
+    &rarr; View XML on any item in Plex Web.
+  </p>
+  <button id="connect" class="secondary">Connect</button>
+</details>
+
+<div class="card hide" id="card-lib">
+  <h2>Library</h2>
+  <select id="section"></select>
+  <div id="show-wrap" class="hide">
+    <label for="show">Show</label>
+    <select id="show"></select>
+  </div>
+  <button id="browse" class="secondary">Browse</button>
+  <div class="status" id="lib-status"></div>
+</div>
+
+<div class="card hide" id="card-items">
+  <h2>Episode</h2>
+  <ul class="list" id="items"></ul>
+  <div class="status" id="item-status"></div>
+</div>
+
+<div class="card hide" id="card-opts">
+  <h2>Options</h2>
+  <label for="interval">Seconds of video per scene</label>
+  <select id="interval">
+    <option value="5000">5 s — more frames, more radio</option>
+    <option value="10000" selected>10 s — recommended</option>
+    <option value="20000">20 s — fewer frames, longest battery</option>
+    <option value="30000">30 s</option>
+  </select>
+  <label for="skip">Skip scenes with no dialogue</label>
+  <select id="skip">
+    <option value="1" selected>Yes</option>
+    <option value="0">No</option>
+  </select>
+</div>
+
+<div class="bar">
+  <button id="save" disabled>Save</button>
+</div>
+
+<script src="auth.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

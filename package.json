@@ -1,0 +1,45 @@
+{
+  "name": "bif-watchface",
+  "author": "lukemeyer",
+  "version": "1.0.0",
+  "keywords": [
+    "pebble-app"
+  ],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "BIF Watchface",
+    "uuid": "2c6103a0-0241-4245-93d0-77975bf3329d",
+    "projectType": "moddable",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "emery"
+    ],
+    "watchapp": {
+      "watchface": true
+    },
+    "messageKeys": [
+      "Hello",
+      "SceneReq",
+      "SceneIdx",
+      "SceneSeq",
+      "SceneTotal",
+      "SceneData",
+      "ScenePal",
+      "SceneCues",
+      "SceneTsMs",
+      "SceneW",
+      "SceneH",
+      "SceneDepth",
+      "Caps",
+      "Err"
+    ],
+    "resources": {
+      "media": []
+    },
+    "capabilities": [
+      "configurable"
+    ]
+  }
+}
