@@ -64,6 +64,19 @@ function skip(group, name, why) { skipped.push({ group, name, why }); }
   } catch (e) { threw = true; }
   check("timeline", "rejects non-BIF magic", threw, true);
 
+  // The two fixtures synthetic.bif cannot catch: a real multiplier, and a
+  // file longer than the sentinel's EOF. Both are shapes real Plex output
+  // does not produce, which is exactly why a buggy parser survives on it.
+  for (const name of ["multiplier", "trailing"]) {
+    const b = new Uint8Array(fs.readFileSync(path.join(CORPUS, `timeline/${name}.bif`)));
+    const e = readJson(`timeline/${name}.expected.json`);
+    const h = timeline.parseHeader(b);
+    check("timeline", `${name}: multiplier`, h.multiplier, e.multiplierMs);
+    check("timeline", `${name}: frames`, timeline.parseIndex(b, h).map((f, i) => ({
+      index: i, tsMs: f.tsMs, offset: f.offset, length: f.length,
+    })), e.frames);
+  }
+
   // pickFrames is still the fixed-interval policy this build ships.
   const picked = timeline.pickFrames(index, 4000);
   check("timeline", "pickFrames(4000ms) over 2s spacing", picked, [0, 2, 4, 6, 8, 10]);

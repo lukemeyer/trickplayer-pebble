@@ -1,0 +1,28 @@
+{
+  "note": "The file carries 37 bytes past the sentinel's EOF offset. The last frame's length comes from the SENTINEL (70), never from the buffer length.",
+  "multiplierMs": 1000,
+  "frameCount": 3,
+  "sentinelEof": 276,
+  "fileByteLength": 313,
+  "frames": [
+    {
+      "index": 0,
+      "tsMs": 0,
+      "offset": 96,
+      "length": 50
+    },
+    {
+      "index": 1,
+      "tsMs": 2000,
+      "offset": 146,
+      "length": 60
+    },
+    {
+      "index": 2,
+      "tsMs": 4000,
+      "offset": 206,
+      "length": 70
+    }
+  ],
+  "lastFrameLengthIfBufferLengthUsedInstead": 107
+}

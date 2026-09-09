@@ -1,0 +1,25 @@
+{
+  "note": "The multiplier at byte 16 is 500, not 0. A parser that hardcodes 1000 reports every timestamp at twice its real value.",
+  "multiplierMs": 500,
+  "frameCount": 3,
+  "frames": [
+    {
+      "index": 0,
+      "tsMs": 0,
+      "offset": 96,
+      "length": 50
+    },
+    {
+      "index": 1,
+      "tsMs": 1000,
+      "offset": 146,
+      "length": 60
+    },
+    {
+      "index": 2,
+      "tsMs": 2000,
+      "offset": 206,
+      "length": 70
+    }
+  ]
+}
