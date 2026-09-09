@@ -123,6 +123,32 @@ function skip(group, name, why) { skipped.push({ group, name, why }); }
     "src/embeddedjs/face.js with no pagination.");
 })();
 
+// -------------------------------------------------------------------- real
+
+// Real captured fixtures contain actual frame bytes from licence-free
+// content. corpus/real/ may be empty — it is a slot, and this must degrade
+// cleanly rather than fail.
+(function checkReal() {
+  const dir = path.join(CORPUS, "real");
+  const names = fs.existsSync(dir)
+    ? fs.readdirSync(dir).filter((f) => f.endsWith(".expected.json"))
+        .map((f) => f.replace(/\.expected\.json$/, ""))
+    : [];
+  if (names.length === 0) {
+    skip("real", "captured fixture", "corpus/real/ is empty — see its README");
+    return;
+  }
+  for (const name of names) {
+    const b = new Uint8Array(fs.readFileSync(path.join(dir, `${name}.bif`)));
+    const e = readJson(`real/${name}.expected.json`);
+    const h = timeline.parseHeader(b);
+    check("real", `${name}: multiplier`, h.multiplier, e.multiplierMs);
+    check("real", `${name}: frames`, timeline.parseIndex(b, h).map((f, i) => ({
+      index: i, tsMs: f.tsMs, offset: f.offset, length: f.length,
+    })), e.frames);
+  }
+})();
+
 // -------------------------------------------------------------------- main
 
 console.log("\ncorpus conformance — trickplayer-pebble (src/pkjs)\n");
