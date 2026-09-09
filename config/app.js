@@ -46,7 +46,7 @@
 
 	function showPin(pin) {
 		$("pin-code").textContent = pin.code;
-		$("pin-link").href = PlexAuth.authUrl(pin.code);
+		$("pin-link").href = PlexAuth.linkUrl(pin.code);
 		show("pin-idle", false);
 		show("pin-active", true);
 		setStatus("auth-status", "Waiting for you to authorise…");

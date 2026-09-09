@@ -5,15 +5,16 @@
 // servers via /resources and pick a reachable connection.
 //
 // The awkward part is that this runs in the Pebble app's config *webview*.
-// Sending the user to app.plex.tv navigates away from us, and a backgrounded
-// webview may stop timers — so polling alone is not reliable. Three defences:
+// Authorising means going to plex.tv, which navigates away from us, and a
+// backgrounded webview may stop timers — so polling alone is not reliable.
+// Three defences:
 //
 //   1. The PIN is persisted, so if the webview is reloaded or restored we resume
 //      polling the same PIN instead of stranding the user on a dead code.
 //   2. There is an explicit "I've authorised it" button; the user is never
 //      dependent on a timer having survived.
-//   3. The link opens in a new tab where possible, so we are not navigated away
-//      at all.
+//   3. The code is short, so it can be redeemed on a completely different
+//      device and this webview never has to move at all.
 //
 // PINs expire (plex.tv gives ~15 minutes), so an expired one is detected and
 // replaced rather than polled forever.
@@ -78,8 +79,8 @@
 		// That matters more here than the extra entropy: a short code can be
 		// entered on a DIFFERENT device — a laptop, the TV app — which sidesteps
 		// the whole problem of navigating a config webview away to plex.tv and
-		// hoping it comes back with its timers intact. The deep link is still
-		// offered for people who would rather tap it.
+		// hoping it comes back with its timers intact. See linkUrl(): the code
+		// type and the redemption URL have to agree.
 		return fetch("https://plex.tv/api/v2/pins", {
 			method: "POST",
 			headers: headers(),
@@ -94,10 +95,17 @@
 		});
 	}
 
-	function authUrl(code) {
-		return "https://app.plex.tv/auth#?clientID=" + encodeURIComponent(clientId()) +
-			"&code=" + encodeURIComponent(code) +
-			"&context%5Bdevice%5D%5Bproduct%5D=" + encodeURIComponent(PRODUCT);
+	// A SHORT pin (strong:false) is redeemed at plex.tv/link by typing the code.
+	//
+	// It is NOT valid at app.plex.tv/auth#?code=... — that deep link expects a
+	// STRONG pin's 25-character code, and handing it a short one makes Plex
+	// answer "unable to authorize this request" after you sign in. One PIN
+	// cannot serve both flows, so the link has to match the PIN type.
+	//
+	// ?pin= prefills the field; the code is displayed anyway so it can be typed
+	// on any other device.
+	function linkUrl(code) {
+		return "https://plex.tv/link?pin=" + encodeURIComponent(code);
 	}
 
 	// Resolves to a token, or null if not authorised yet. Throws if the PIN is
@@ -183,7 +191,7 @@
 		resumablePin: resumablePin,
 		clearPin: clearPin,
 		checkPin: checkPin,
-		authUrl: authUrl,
+		linkUrl: linkUrl,
 		resources: resources,
 		probe: probe
 	};
