@@ -144,8 +144,12 @@
 		setStatus("server-status", "Finding a reachable address…");
 		// Plex advertises addresses that often are not reachable from where the
 		// phone actually is, so each is probed rather than trusted.
-		PlexAuth.probe(s, state.token, function (uri, i, n) {
-			setStatus("server-status", "Trying " + i + " of " + n + "…");
+		// All addresses are probed at once, so this is not "trying 1 of 4" any
+		// more — it is a race, and the count is how many have answered.
+		PlexAuth.probe(s, state.token, function (uri, answered, n) {
+			setStatus("server-status", uri === null
+				? "Racing " + n + " address" + (n === 1 ? "" : "es") + "…"
+				: answered + " of " + n + " answered…");
 		}).then(function (uri) {
 			if (!uri) {
 				setStatus("server-status",

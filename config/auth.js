@@ -165,24 +165,118 @@
 		});
 	}
 
-	// Try each connection until one answers /identity. Plex advertises addresses
-	// that are frequently unreachable from where you actually are, so probing is
-	// not optional.
-	function probe(server, token, onProgress) {
-		var conns = rankConnections(server);
-		var i = 0;
-		function next() {
-			if (i >= conns.length) return Promise.resolve(null);
-			var c = conns[i++];
-			var uri = c.uri;
-			if (onProgress) onProgress(uri, i, conns.length);
-			return fetch(uri + "/identity", {
+	// Race every connection at once, rather than trying them in order.
+	//
+	// plex.tv advertises several routes per server — a LAN address, a public
+	// one, usually a relay — and which of them works depends entirely on where
+	// you are. Probing in order means waiting out each dead route's timeout
+	// before the next is even attempted, and a LAN address that no longer
+	// resolves is the common case the moment you leave the house.
+	//
+	// Ranking BREAKS TIES; it does not decide. Everything that answers inside
+	// the window is collected, then preferred local -> direct -> relay, and only
+	// then by speed. Taking the literal first responder would sometimes pick a
+	// relay over a LAN address twenty milliseconds behind it, and Plex relays
+	// are bandwidth-limited — which matters when every scene is a fetch.
+	//
+	// See trickplayer-knowledge findings/F-016.
+	var PROBE_TIMEOUT_MS = 8000;
+
+	// How long to keep waiting for a BETTER-ranked route once some route has
+	// answered. This is the part that makes racing actually pay.
+	//
+	// Waiting for every probe to settle before choosing sounds right and is
+	// useless: a route that black-holes packets — a LAN address that plex.tv
+	// still advertises after you have left the house — never fails fast, it
+	// times out. Wait for it and the race costs the full timeout, exactly like
+	// probing in order. Measured against a real server with one dead route
+	// ahead of a live one:
+	//
+	//     serial                    8022 ms
+	//     raced, wait for all       8001 ms   <- no gain whatsoever
+	//     raced + this grace window  411 ms   <- 19.5x, same route chosen
+	//
+	// So: as soon as anything answers, only better-ranked routes are still
+	// worth waiting for, and only briefly.
+	var RANK_GRACE_MS = 400;
+
+	// fetch() has no timeout of its own, and a route that black-holes packets
+	// would otherwise hang until the browser gives up — long past the point the
+	// user has concluded the app is broken.
+	function probeOne(uri, token, timeoutMs) {
+		return new Promise(function (resolve) {
+			var settled = false;
+			function done(ok) {
+				if (settled) return;
+				settled = true;
+				resolve(ok);
+			}
+			var timer = setTimeout(function () { done(false); }, timeoutMs);
+			fetch(uri + "/identity", {
 				headers: { Accept: "application/json", "X-Plex-Token": token }
 			}).then(function (r) {
-				return r.ok ? uri : next();
-			}).catch(function () { return next(); });
-		}
-		return next();
+				clearTimeout(timer);
+				done(!!r.ok);
+			}).catch(function () {
+				clearTimeout(timer);
+				done(false);
+			});
+		});
+	}
+
+	function probe(server, token, onProgress, timeoutMs) {
+		var conns = rankConnections(server);
+		if (!conns.length) return Promise.resolve(null);
+		timeoutMs = timeoutMs || PROBE_TIMEOUT_MS;
+
+		if (onProgress) onProgress(null, 0, conns.length);
+
+		var started = Date.now();
+		var best = null;          // { uri, rank, ms }
+		var answered = 0;
+		var settled = 0;
+		var finished = false;
+
+		return new Promise(function (resolve) {
+			var overall = null;
+			var grace = null;
+
+			function finish() {
+				if (finished) return;
+				finished = true;
+				if (overall) clearTimeout(overall);
+				if (grace) clearTimeout(grace);
+				resolve(best ? best.uri : null);
+			}
+
+			function consider() {
+				if (!best) return;
+				// Rank 0 is decisive — nothing still in flight can beat it.
+				if (best.rank === 0) { finish(); return; }
+				// Otherwise give better-ranked routes a brief chance, once.
+				if (grace === null) grace = setTimeout(finish, RANK_GRACE_MS);
+			}
+
+			overall = setTimeout(finish, timeoutMs);
+
+			conns.forEach(function (c, rank) {
+				probeOne(c.uri, token, timeoutMs).then(function (ok) {
+					settled++;
+					if (ok) {
+						answered++;
+						// Prefer by rank, then by speed.
+						var ms = Date.now() - started;
+						if (!best || rank < best.rank ||
+							(rank === best.rank && ms < best.ms)) {
+							best = { uri: c.uri, rank: rank, ms: ms };
+						}
+						if (onProgress) onProgress(c.uri, answered, conns.length);
+						consider();
+					}
+					if (settled === conns.length) finish();
+				});
+			});
+		});
 	}
 
 	global.PlexAuth = {
