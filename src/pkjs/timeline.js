@@ -68,10 +68,30 @@ function pickFrames(index, intervalMs) {
 	return picked;
 }
 
+// Lift a parsed BIF index into the seam's source-neutral frame shape.
+//
+// The entry itself becomes the LOCATOR — it carries offset and length, which
+// mean nothing outside a Plex provider — and the byte length becomes the size
+// hint. Plex is a source that CAN answer "how big is this frame", which is why
+// blank filtering and duplicate detection are available on it and not on a
+// tile-sheet source. See trickplayer-knowledge/SEAM.md §2.
+function toFrameRefs(index) {
+	var out = [];
+	for (var i = 0; i < index.length; i++) {
+		out.push({
+			tsMs: index[i].tsMs,
+			sizeHint: index[i].length,
+			locator: index[i]
+		});
+	}
+	return out;
+}
+
 if (typeof module !== "undefined") {
 	module.exports = {
 		parseHeader: parseHeader,
 		parseIndex: parseIndex,
-		pickFrames: pickFrames
+		pickFrames: pickFrames,
+		toFrameRefs: toFrameRefs
 	};
 }

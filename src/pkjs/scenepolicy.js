@@ -28,6 +28,11 @@
 //   F-009  Floor the filters: a repetitive face beats an empty one.
 //
 //   F-010  A cue belongs to the window it STARTS in.
+//
+// Consumes the seam's frame shape — { tsMs, sizeHint, locator } — and reads
+// ONLY tsMs and sizeHint. `locator` is the provider's business: a byte range
+// on Plex, a tile sheet and grid cell on a source like Jellyfin. Reading it
+// here would hard-code a provider. See trickplayer-knowledge/SEAM.md §4.
 
 function median(nums) {
 	if (!nums.length) return 0;
@@ -38,14 +43,24 @@ function median(nums) {
 		: sorted[mid];
 }
 
-// Frames whose declared length is at least `pct`% of the episode's median.
+// Frames whose size hint is at least `pct`% of the episode's median.
 // A frame exactly on the threshold is kept.
-function filterBlank(index, picked, pct) {
-	var med = median(index.map(function (e) { return e.length; }));
+//
+// Only meaningful when the source HAS size hints; callers gate on that rather
+// than letting this quietly decide for itself.
+function filterBlank(frames, picked, pct) {
+	var sizes = [];
+	for (var k = 0; k < frames.length; k++) {
+		if (frames[k].sizeHint !== null && frames[k].sizeHint !== undefined) {
+			sizes.push(frames[k].sizeHint);
+		}
+	}
+	var med = median(sizes);
 	var floor = (pct / 100) * med;
 	var out = [];
 	for (var i = 0; i < picked.length; i++) {
-		if (index[picked[i]].length >= floor) out.push(picked[i]);
+		var h = frames[picked[i]].sizeHint;
+		if (h === null || h === undefined || h >= floor) out.push(picked[i]);
 	}
 	return { usable: out, medianLength: med };
 }
@@ -54,12 +69,13 @@ function filterBlank(index, picked, pct) {
 // Compare against the current run's REPRESENTATIVE rather than the immediate
 // neighbour, so a run survives a frame that merely happens to match the one
 // before it.
-function lengthRunDuplicates(index) {
-	var dup = new Array(index.length);
+function lengthRunDuplicates(frames) {
+	var dup = new Array(frames.length);
 	dup[0] = false;
 	var rep = 0;
-	for (var i = 1; i < index.length; i++) {
-		if (index[i].length === index[rep].length) {
+	for (var i = 1; i < frames.length; i++) {
+		var a = frames[i].sizeHint, b = frames[rep].sizeHint;
+		if (a !== null && a !== undefined && a === b) {
 			dup[i] = true;
 		} else {
 			dup[i] = false;
@@ -85,29 +101,50 @@ function cueCountIn(cues, fromMs, toMs) {
 // opts     { durationMs, blankPct, skipSilent, minUsable }
 //
 // Returns { scenes: [{ frameIndex, windowStartMs, windowEndMs }], ... }
-function buildScenes(index, cues, opts) {
+function buildScenes(frames, cues, opts) {
 	opts = opts || {};
 	var blankPct = opts.blankPct === undefined ? 15 : opts.blankPct;
 	var minUsable = opts.minUsable === undefined ? 8 : opts.minUsable;
+	// From the provider's capabilities. False means this source has no
+	// per-frame byte lengths — a tile-sheet source has none, because a
+	// thumbnail is a crop and not a file. Blank filtering and duplicate
+	// detection both read that length, so both are SKIPPED, not faked.
+	//
+	// Deciding once, here, is deliberate: the alternative is each filter
+	// separately noticing a missing hint and disagreeing about what
+	// "unavailable" means. See SEAM.md §4.
+	var hasSizes = opts.hasFrameSizeHints !== false;
+
 	var all = [];
 	var i;
-	for (i = 0; i < index.length; i++) all.push(i);
+	for (i = 0; i < frames.length; i++) all.push(i);
 	var target = Math.min(minUsable, all.length);
 
-	var blank = filterBlank(index, all, blankPct);
-	var dup = lengthRunDuplicates(index);
+	var medianLength = 0;
+	var kept = all;
+	var blanksSkipped = 0;
+	var duplicatesSkipped = 0;
 
-	var kept = [];
-	for (i = 0; i < blank.usable.length; i++) {
-		if (!dup[blank.usable[i]]) kept.push(blank.usable[i]);
+	if (hasSizes) {
+		var blank = filterBlank(frames, all, blankPct);
+		medianLength = blank.medianLength;
+		blanksSkipped = all.length - blank.usable.length;
+
+		var dup = lengthRunDuplicates(frames);
+		for (i = 0; i < dup.length; i++) if (dup[i]) duplicatesSkipped++;
+
+		kept = [];
+		for (i = 0; i < blank.usable.length; i++) {
+			if (!dup[blank.usable[i]]) kept.push(blank.usable[i]);
+		}
+		// Dropping duplicates must not gut a static episode, nor must blank
+		// filtering: a repetitive face beats an empty one.
+		if (kept.length < target) kept = blank.usable.slice();
+		if (kept.length < target) kept = all;
 	}
-	// Dropping duplicates must not gut a static episode.
-	if (kept.length < target) kept = blank.usable.slice();
-	// Nor must blank filtering.
-	if (kept.length < target) kept = all;
 
 	var durationMs = opts.durationMs ||
-		(index.length ? index[index.length - 1].tsMs : 0);
+		(frames.length ? frames[frames.length - 1].tsMs : 0);
 
 	// A scene runs from its frame to the next KEPT frame, so the time of every
 	// skipped frame folds into the scene that replaces it and its cues survive.
@@ -115,11 +152,12 @@ function buildScenes(index, cues, opts) {
 	for (i = 0; i < kept.length; i++) {
 		scenes.push({
 			frameIndex: kept[i],
-			windowStartMs: index[kept[i]].tsMs,
-			windowEndMs: i + 1 < kept.length ? index[kept[i + 1]].tsMs : durationMs
+			windowStartMs: frames[kept[i]].tsMs,
+			windowEndMs: i + 1 < kept.length ? frames[kept[i + 1]].tsMs : durationMs
 		});
 	}
 
+	// Empty-scene removal needs only cues, so it works on every source.
 	var emptyRemoved = 0;
 	if (opts.skipSilent && cues && cues.length) {
 		var withCues = [];
@@ -136,9 +174,10 @@ function buildScenes(index, cues, opts) {
 
 	return {
 		scenes: scenes,
-		medianLength: blank.medianLength,
-		blanksSkipped: all.length - blank.usable.length,
-		duplicatesSkipped: dup.filter(function (d) { return d; }).length,
+		hadSizeHints: hasSizes,
+		medianLength: medianLength,
+		blanksSkipped: blanksSkipped,
+		duplicatesSkipped: duplicatesSkipped,
 		emptyScenesRemoved: emptyRemoved
 	};
 }

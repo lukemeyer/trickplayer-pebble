@@ -36,10 +36,14 @@ var lastServed = 0;   // highest scene index the watch has asked for
 
 function log(s) { console.log("[pkjs] " + s); }
 
-// ------------------------------------------------------------------- plex
-var plex = require("./plex.js");
-var timeline = require("./timeline.js");
+// ----------------------------------------------------------------- modules
+//
+// Note what is NOT required here any more: plex.js and timeline.js. This file
+// no longer knows what Plex is or what a BIF looks like — it asks the source
+// for frames and cues, and the source knows. Swapping in a second provider is
+// a change to the `source` line below and nothing else.
 var scenepolicy = require("./scenepolicy.js");
+var plexsource = require("./plexsource.js");
 var jpegLib = require("./jpeg.js");
 var render = require("./render.js");
 
@@ -101,49 +105,35 @@ var loading = false;
 // parses in about a millisecond) that it is worth having in full: it is what
 // makes most advances text-only.
 function loadSubs(cb) {
-	if (cues || !cfg || !cfg.subtitleRef) { cb(null); return; }
-	var url = cfg.server + cfg.subtitleRef;
-	plex.getRange(url, null, null, cfg.token, function (err, bytes) {
-		if (err) { log("subs failed: " + err.message); cb(null); return; }
-		try {
-			// The sidecar is NOT reliably UTF-8 — a real Plex server serves
-			// UTF-16, labelled text/html with no charset. subsLib.decodeBytes
-			// sniffs the BOM; assuming UTF-8 yielded zero cues, silently.
-			// See trickplayer-knowledge findings/F-035.
-			cues = subsLib.parse(subsLib.decodeBytes(bytes));
-			log("subtitles: " + cues.length + " cues");
-		} catch (e2) {
-			log("subs parse failed: " + e2.message);
-			cues = [];
-		}
+	if (cues || !source) { cb(null); return; }
+	source.cues(function (err, parsed) {
+		if (err) { log("subs failed: " + err.message); cues = []; cb(null); return; }
+		cues = parsed;
+		log("subtitles: " + cues.length + " cues");
 		cb(null);
 	});
 }
 
 // Fetch and parse the BIF index once. Frames are pulled individually after.
+// Fetch the frame timeline once. Frames are pulled individually after.
+//
+// `index` now holds the seam's shape — { tsMs, sizeHint, locator } — not BIF
+// entries. Nothing here reads a locator; only the provider does.
 function loadIndex(cb) {
 	if (index) { cb(null); return; }
-	if (!cfg) { cb(new Error("no config")); return; }
+	if (!source) { cb(new Error("no config")); return; }
 	if (loading) { cb(new Error("busy")); return; }
 	loading = true;
 
-	var url = plex.timelineUrl(cfg);
-	plex.getRange(url, 0, 63, cfg.token, function (err, head) {
-		if (err) { loading = false; cb(err); return; }
-		var header;
-		try { header = timeline.parseHeader(head); }
-		catch (e) { loading = false; cb(e); return; }
-
-		log("BIF " + header.count + " frames, multiplier " + header.multiplier + "ms");
-		plex.getRange(url, 0, header.indexBytes - 1, cfg.token, function (err2, idxBytes) {
-			loading = false;
-			if (err2) { cb(err2); return; }
-			try {
-				index = timeline.parseIndex(idxBytes, header);
-			} catch (e2) { cb(e2); return; }
-			log("index ready: " + index.length + " frames");
-			cb(null);
-		});
+	source.timeline(function (err, frames, header) {
+		loading = false;
+		if (err) { cb(err); return; }
+		index = frames;
+		if (header) {
+			log("BIF " + header.count + " frames, multiplier " + header.multiplier + "ms");
+		}
+		log("index ready: " + index.length + " frames");
+		cb(null);
 	});
 }
 
@@ -166,11 +156,20 @@ var SKIP_SILENT = SKIP_SILENT_CFG;
 // that a cache hit cannot desynchronise. See trickplayer-knowledge F-007/F-008.
 var scenes = null;
 
+// The media source. Everything below asks IT for frames and cues rather than
+// reaching for Plex directly, so a second provider is a swap here and nothing
+// else. See trickplayer-knowledge/SEAM.md.
+var source = cfg ? plexsource.create(cfg) : null;
+
 function ensureScenes() {
 	if (scenes) return scenes;
+	var caps = source.capabilities();
 	var built = scenepolicy.buildScenes(index, cues, {
 		durationMs: index.length ? index[index.length - 1].tsMs : 0,
-		skipSilent: SKIP_SILENT
+		skipSilent: SKIP_SILENT,
+		// A source with no per-frame sizes gets neither blank filtering nor
+		// duplicate detection — skipped, not faked (SEAM.md §4).
+		hasFrameSizeHints: caps.hasFrameSizeHints
 	});
 	scenes = built.scenes;
 	log("scenes: " + scenes.length + " of " + index.length + " frames (" +
@@ -203,10 +202,8 @@ function makeRealScene(sceneIdx, cb) {
 		var sc = list[((sceneIdx % list.length) + list.length) % list.length];
 		var fi = sc.frameIndex;
 		var ent = index[fi];
-		var url = plex.timelineUrl(cfg);
 
-		plex.getRange(url, ent.offset, ent.offset + ent.length - 1, cfg.token,
-			function (e2, jpgBytes) {
+		source.frameBytes(ent, function (e2, jpgBytes) {
 			if (e2) { cb(e2); return; }
 			var t0 = Date.now();
 			var img, enc;

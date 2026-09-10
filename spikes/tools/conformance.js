@@ -128,7 +128,11 @@ function skip(group, name, why) { skipped.push({ group, name, why }); }
   // Blank filtering and the usable floor, independent of binning policy.
   const exp = readJson("scene/filter.cases.json");
   for (const c of exp.cases) {
-    const index = c.lengths.map((len, i) => ({ tsMs: i * 2000, offset: 0, length: len }));
+    // Callers hand the policy the SEAM's frame shape now: the byte length
+    // becomes a size hint, and the BIF entry becomes an opaque locator.
+    const index = c.lengths.map((len, i) => ({
+      tsMs: i * 2000, sizeHint: len, locator: { offset: 0, length: len },
+    }));
     const picked = index.map((_, i) => i);
     const r = scenepolicy.filterBlank(index, picked, c.blankThresholdPct);
     check("scene", `${c.name}: medianLength`, r.medianLength, c.expectMedianLength);
@@ -137,8 +141,10 @@ function skip(group, name, why) { skipped.push({ group, name, why }); }
 
   // The floor: dropping duplicates must not gut a static episode. Every frame
   // here shares a length, so length-run dedup would leave almost nothing.
-  const flat = Array.from({ length: 12 }, (_, i) => ({ tsMs: i * 2000, offset: i * 10, length: 10 }));
-  flat[0].length = 100000; // one large frame drags the median up
+  const flat = Array.from({ length: 12 }, (_, i) => ({
+    tsMs: i * 2000, sizeHint: 10, locator: { offset: i * 10, length: 10 },
+  }));
+  flat[0].sizeHint = 100000; // one large frame drags the median up
   const floored = scenepolicy.buildScenes(flat, null, {
     durationMs: 24000, skipSilent: false, minUsable: 8,
   });
@@ -150,8 +156,12 @@ function skip(group, name, why) { skipped.push({ group, name, why }); }
   const fx = readJson("scene/episode.frames.json");
   const cx = readJson("scene/episode.cues.json");
   const want = readJson("scene/episode.expected.json").cases.adopted.expect;
-  const built = scenepolicy.buildScenes(fx.frames, cx.cues, {
+  const seamFrames = fx.frames.map((f) => ({
+    tsMs: f.tsMs, sizeHint: f.length, locator: { offset: f.offset, length: f.length },
+  }));
+  const built = scenepolicy.buildScenes(seamFrames, cx.cues, {
     durationMs: fx.durationMs, blankPct: 15, skipSilent: true, minUsable: 8,
+    hasFrameSizeHints: true,
   });
   check("scene", "adopted: sceneCount", built.scenes.length, want.sceneCount);
 
@@ -169,12 +179,26 @@ function skip(group, name, why) { skipped.push({ group, name, why }); }
     +(cueTotal / built.scenes.length).toFixed(4), want.avgCuesPerScene);
 
   // Duplicate detection is from declared length alone — no bytes fetched.
-  const dup = scenepolicy.lengthRunDuplicates(fx.frames);
+  const dup = scenepolicy.lengthRunDuplicates(seamFrames);
   const truth = fx.frames.map((f) => f.duplicateOfIndex !== null);
   let fp = 0, missed = 0;
   dup.forEach((d, i) => { if (d && !truth[i]) fp++; if (!d && truth[i]) missed++; });
   check("scene", "length-run dedup: no false positives on the fixture", fp, 0);
   check("scene", "length-run dedup: none missed on the fixture", missed, 0);
+
+  // A source with no per-frame sizes: both filters SKIPPED, not faked
+  // (SEAM.md §4). Before the seam refactor this build could not express it.
+  const noSize = fx.frames.map((f) => ({ tsMs: f.tsMs, sizeHint: null, locator: {} }));
+  const wantNo = readJson("scene/episode.expected.json").cases["no-size-hints"].expect;
+  const degraded = scenepolicy.buildScenes(noSize, cx.cues, {
+    durationMs: fx.durationMs, skipSilent: true, minUsable: 8,
+    hasFrameSizeHints: false,
+  });
+  check("scene", "no size hints: sceneCount", degraded.scenes.length, wantNo.sceneCount);
+  check("scene", "no size hints: nothing judged blank", degraded.blanksSkipped, 0);
+  check("scene", "no size hints: nothing judged duplicate", degraded.duplicatesSkipped, 0);
+  check("scene", "no size hints: differs from the filtered run",
+    degraded.scenes.length > built.scenes.length, true);
 })();
 
 // -------------------------------------------------------------------- cues
