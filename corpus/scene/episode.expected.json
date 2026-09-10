@@ -106,6 +106,24 @@
         "avgCuesPerScene": 2.5899,
         "medianFrameLength": 5466
       }
+    },
+    "no-size-hints": {
+      "params": {
+        "mode": "frameTimings",
+        "blankThresholdPct": 0,
+        "skipDuplicates": false,
+        "removeEmpty": true
+      },
+      "expect": {
+        "usableFrames": 1815,
+        "sceneCount": 564,
+        "emptyScenesBeforeRemoval": 1251,
+        "uniqueFramesShipped": 564,
+        "sceneBytes": 3066362,
+        "totalBytes": 9938460,
+        "avgCuesPerScene": 1.0089,
+        "medianFrameLength": 5466
+      }
     }
   }
 }
