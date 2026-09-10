@@ -82,8 +82,6 @@ function skip(group, name, why) { skipped.push({ group, name, why }); }
   const picked = timeline.pickFrames(index, 4000);
   check("timeline", "pickFrames(4000ms) over 2s spacing", picked, [0, 2, 4, 6, 8, 10]);
 
-  skip("timeline", "byte-identical duplicate detection",
-    "F-001 not implemented on Pebble — no duplicate skip exists yet");
 })();
 
 // -------------------------------------------------------------------- subs
@@ -210,6 +208,17 @@ function skip(group, name, why) { skipped.push({ group, name, why }); }
     check("real", `${name}: frames`, timeline.parseIndex(b, h).map((f, i) => ({
       index: i, tsMs: f.tsMs, offset: f.offset, length: f.length,
     })), e.frames);
+
+    // The zero-I/O length heuristic against HASHED ground truth from a real
+    // encoder (F-036). This is the assertion the whole finding rests on, and
+    // a synthetic fixture cannot make it honestly.
+    if (e.duplicateOf) {
+      const truth = e.duplicateOf.map((d) => d !== null);
+      const heur = scenepolicy.lengthRunDuplicates(e.frames);
+      let fp = 0;
+      heur.forEach((d, i) => { if (d && !truth[i]) fp++; });
+      check("real", `${name}: length heuristic flags no distinct frame`, fp, 0);
+    }
   }
 })();
 

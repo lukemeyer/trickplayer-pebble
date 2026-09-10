@@ -4,7 +4,14 @@ Everything else in `corpus/` is synthetic or metadata-only. These are
 different: **they contain actual frame bytes**, captured from a real Plex
 server by `tools/corpus/capture-fixture.js`.
 
-Nothing is in here yet. This directory is the slot and the instructions.
+**`tears-of-steel` is captured.** 114 of 365 frames of real bytes, re-emitted
+as a valid BIF with a correct sentinel, plus metadata for the whole original.
+Blender open movie, CC-BY 3.0, credited in `ATTRIBUTION.md`.
+
+It confirmed two things a synthetic fixture could only assume: real Plex output
+really does write `0` in the multiplier field, and the zero-I/O duplicate
+heuristic ([[F-036]]) really does hold against a real encoder — 67 of 68
+duplicates caught, **zero false positives**.
 
 ## Why bother, given the synthetic fixtures work
 
@@ -51,9 +58,11 @@ Against that, it is arguably the **best** available choice for the half it
 does cover: animation with long held shots is exactly the content that
 produces byte-identical duplicate frames, which is [[F-001]]'s whole subject.
 
-**Suggestion:** capture Big Buck Bunny for the timeline and duplicate half,
-and add Sintel or Tears of Steel if you want the subtitle half covered by real
-data too. They are not mutually exclusive — the tool namespaces by `--name`.
+**Tears of Steel was captured** for exactly this reason — it has dialogue, so
+it covers both halves. Big Buck Bunny would still be a good addition for the
+duplicate half specifically, since animation with long held shots is the
+content that produces the most byte-identical frames. The tool namespaces by
+`--name`, so they are not mutually exclusive.
 
 ## Capturing one
 
