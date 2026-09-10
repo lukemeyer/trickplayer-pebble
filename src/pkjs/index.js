@@ -44,7 +44,6 @@ function log(s) { console.log("[pkjs] " + s); }
 // a change to the `source` line below and nothing else.
 var scenepolicy = require("./scenepolicy.js");
 var plexsource = require("./plexsource.js");
-var jpegLib = require("./jpeg.js");
 var render = require("./render.js");
 
 var SKIP_SILENT_CFG = true;
@@ -203,13 +202,17 @@ function makeRealScene(sceneIdx, cb) {
 		var fi = sc.frameIndex;
 		var ent = index[fi];
 
-		source.frameBytes(ent, function (e2, jpgBytes) {
+		// The provider returns DECODED pixels, not image bytes: this platform
+		// decodes in JavaScript regardless, and a tile-sheet source cannot hand
+		// back a cropped JPEG at all because jpeg.js has no encoder. Where the
+		// pixels came from — a ranged GET and a decode, or a crop of a sheet
+		// already held — is the provider's business.
+		source.framePixels(ent, function (e2, px) {
 			if (e2) { cb(e2); return; }
 			var t0 = Date.now();
-			var img, enc;
+			var enc;
 			try {
-				img = jpegLib.decode(jpgBytes);
-				enc = render.encodeFrame(img.pixels, img.width, img.height, FW, FH);
+				enc = render.encodeFrame(px.pixels, px.width, px.height, FW, FH);
 			} catch (e3) { cb(e3); return; }
 
 			// Cues belonging to this scene's window. A cue is owned by the scene
@@ -222,8 +225,8 @@ function makeRealScene(sceneIdx, cb) {
 				: [];
 
 			log("scene " + sceneIdx + " frame " + fi + " @" +
-				((ent.tsMs / 1000) | 0) + "s: " + jpgBytes.length + "B jpeg -> " +
-				enc.packed.length + "B, " + lines.length + " cues, " +
+				((ent.tsMs / 1000) | 0) + "s: " + px.width + "x" + px.height +
+				" -> " + enc.packed.length + "B, " + lines.length + " cues, " +
 				(Date.now() - t0) + "ms");
 
 			// Cue separator on the wire is "\n", so flatten newlines inside a

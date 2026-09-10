@@ -23,6 +23,7 @@ const CORPUS = path.join(ROOT, "corpus");
 const timeline = require(path.join(ROOT, "src/pkjs/timeline.js"));
 const subs = require(path.join(ROOT, "src/pkjs/subs.js"));
 const scenepolicy = require(path.join(ROOT, "src/pkjs/scenepolicy.js"));
+const jellyfinsource = require(path.join(ROOT, "src/pkjs/jellyfinsource.js"));
 
 const readJson = (rel) => JSON.parse(fs.readFileSync(path.join(CORPUS, rel), "utf8"));
 
@@ -246,6 +247,72 @@ function skip(group, name, why) { skipped.push({ group, name, why }); }
       heur.forEach((d, i) => { if (d && !truth[i]) fp++; });
       check("real", `${name}: length heuristic flags no distinct frame`, fp, 0);
     }
+  }
+})();
+
+// -------------------------------------------------------------- jellyfin
+
+// The tile-sheet provider. Crop geometry is what every platform must implement
+// identically, so it is what the corpus pins; the sheet's pixels are not
+// vendored here because verifying an actual crop needs image decoding.
+(function checkJellyfin() {
+  const dir = path.join(CORPUS, "real");
+  const names = fs.existsSync(dir)
+    ? fs.readdirSync(dir).filter((f) => f.endsWith(".expected.json"))
+        .map((f) => f.replace(/\.expected\.json$/, ""))
+        .filter((n) => (readJson(`real/${n}.expected.json`).source || {}).provider === "jellyfin")
+    : [];
+  if (!names.length) {
+    skip("jellyfin", "tile-sheet fixture", "no Jellyfin capture in corpus/real/");
+    return;
+  }
+
+  for (const name of names) {
+    const e = readJson(`real/${name}.expected.json`);
+    const g = e.geometry;
+    const src = jellyfinsource.create({
+      server: "http://example", token: "x", itemId: "i", mediaSourceId: "m",
+      width: 320, subtitleIndex: null,
+      trickplay: {
+        TileWidth: g.tileWidth, TileHeight: g.tileHeight,
+        Width: g.thumbWidth, Height: g.thumbHeight,
+        Interval: g.intervalMs, ThumbnailCount: g.thumbnailCount,
+      },
+    });
+
+    for (const box of e.cropBoxes) {
+      check("jellyfin", `${name}: crop box for thumb ${box.index}`,
+        src.cropBox(box.index),
+        { sheet: box.sheet, x: box.x, y: box.y, w: box.w, h: box.h });
+    }
+
+    // A partial final sheet is normal; assuming full sheets runs off the end.
+    const last = src.cropBox(g.thumbnailCount - 1);
+    check("jellyfin", `${name}: last thumb stays inside its sheet`,
+      last.y + last.h <= g.tileHeight * g.thumbHeight, true);
+
+    const caps = src.capabilities();
+    check("jellyfin", `${name}: declares no frame size hints`, caps.hasFrameSizeHints, false);
+    check("jellyfin", `${name}: declares batch granularity`, caps.fetchGranularity, "batch");
+    check("jellyfin", `${name}: needs an address before auth`, caps.needsAddressFirst, true);
+
+    src.timeline((err, frames) => {
+      check("jellyfin", `${name}: timeline length`, frames.length, g.thumbnailCount);
+      check("jellyfin", `${name}: every size hint is null`,
+        frames.every((f) => f.sizeHint === null), true);
+      check("jellyfin", `${name}: timestamps follow the interval`,
+        frames.slice(0, 3).map((f) => f.tsMs), [0, g.intervalMs, g.intervalMs * 2]);
+
+      // The provider's own timeline through the real policy, with the filters
+      // off because the provider says they cannot run (SEAM.md §4).
+      const jcues = readJson(`real/${name}.cues.json`).cues.map((c) => ({ ...c, text: "x" }));
+      const built = scenepolicy.buildScenes(frames, jcues,
+        { durationMs: g.thumbnailCount * g.intervalMs, skipSilent: true, minUsable: 8,
+          hasFrameSizeHints: caps.hasFrameSizeHints });
+      check("jellyfin", `${name}: scenes are built and non-empty`, built.scenes.length > 0, true);
+      check("jellyfin", `${name}: nothing judged blank or duplicate`,
+        [built.blanksSkipped, built.duplicatesSkipped], [0, 0]);
+    });
   }
 })();
 

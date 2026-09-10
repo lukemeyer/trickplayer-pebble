@@ -13,6 +13,7 @@
 var timeline = require("./timeline.js");
 var subsLib = require("./subs.js");
 var plex = require("./plex.js");
+var jpegLib = require("./jpeg.js");
 
 function create(cfg) {
 
@@ -53,17 +54,34 @@ function create(cfg) {
 		});
 	}
 
-	// cb(err, Uint8Array). Unwrapping the locator is THIS provider's business:
-	// on Plex it is a byte range; a tile-sheet source finds a sheet index and a
-	// grid cell here and fetches something else entirely (SEAM.md §5).
-	function frameBytes(frame, cb) {
+	// cb(err, { pixels, width, height }) — DECODED, not encoded.
+	//
+	// On this platform a provider returns pixels rather than image bytes, and
+	// that is a Pebble-local reading of the seam rather than a global one:
+	//
+	//   * PKJS decodes in JavaScript regardless, so encoded bytes were never
+	//     useful here — the JPEG-ness was a Plex detail leaking through.
+	//   * jpeg.js has no ENCODER, so a tile-sheet provider physically cannot
+	//     hand back a cropped JPEG. It can only hand back the crop's pixels.
+	//
+	// G2 and Wear OS keep taking encoded bytes, because both have a native or
+	// hardware decoder that wants them. Same contract, different currency,
+	// chosen by what the platform can actually use.
+	//
+	// Unwrapping the locator is THIS provider's business: on Plex it is a byte
+	// range; a tile-sheet source finds a sheet and a grid cell (SEAM.md §5).
+	function framePixels(frame, cb) {
 		var loc = frame.locator;
 		plex.getRange(
 			plex.timelineUrl(cfg),
 			loc.offset,
 			loc.offset + loc.length - 1,
 			cfg.token,
-			cb
+			function (err, bytes) {
+				if (err) { cb(err); return; }
+				try { cb(null, jpegLib.decode(bytes)); }
+				catch (e) { cb(e); }
+			}
 		);
 	}
 
@@ -95,7 +113,7 @@ function create(cfg) {
 	return {
 		capabilities: capabilities,
 		timeline: timelineFrames,
-		frameBytes: frameBytes,
+		framePixels: framePixels,
 		cues: cues,
 		previewCostBytes: previewCostBytes
 	};
