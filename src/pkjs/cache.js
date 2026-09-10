@@ -44,9 +44,15 @@ function saveLru() {
 // rather than serving bytes the watch can no longer draw.
 //
 // SCHEMA is part of the key so a change to the stored SHAPE invalidates too.
-// Bumped to 2 when entries gained `f` (the resolved frame): v1 entries lack it,
-// and replaying them would resurrect the duplicate-frame bug.
-var SCHEMA = 2;
+//
+//   2  entries gained `f` (the resolved frame), because the read-time skip
+//      chain needed a cache hit to say where it had landed.
+//   3  `f` is gone again, and — the reason this had to bump rather than just
+//      drop the field — scene -> frame is now decided up front by
+//      scenepolicy.js. A v2 entry for scene N holds whatever frame the old
+//      skip chain happened to resolve to, which is NOT the frame scene N maps
+//      to now. Serving one would show the wrong picture, silently.
+var SCHEMA = 3;
 
 function setProfile(timelineRef, w, h, depth) {
 	profile = SCHEMA + "." + timelineRef + "." + w + "x" + h + "." + depth;
@@ -120,8 +126,7 @@ function get(sceneIdx) {
 		packed: fromB64(obj.p),
 		pal: fromB64(obj.q),
 		cues: obj.c || [],
-		tsMs: obj.t || 0,
-		f: obj.f
+		tsMs: obj.t || 0
 	};
 }
 
@@ -141,8 +146,7 @@ function put(sceneIdx, scene) {
 		p: toB64(scene.packed),
 		q: toB64(scene.pal),
 		c: scene.cues,
-		t: scene.tsMs,
-		f: scene.pick        // which `picked` entry this resolved to
+		t: scene.tsMs
 	});
 
 	// Quota errors are the normal steady state once the cache fills, not an

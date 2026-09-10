@@ -39,6 +39,7 @@ function log(s) { console.log("[pkjs] " + s); }
 // ------------------------------------------------------------------- plex
 var plex = require("./plex.js");
 var timeline = require("./timeline.js");
+var scenepolicy = require("./scenepolicy.js");
 var jpegLib = require("./jpeg.js");
 var render = require("./render.js");
 
@@ -153,60 +154,59 @@ function loadIndex(cb) {
 	});
 }
 
-// How many distinct entries a palette needs before the frame is worth showing.
-// Episodes open and close on black, and fade through it at act breaks: frame 0
-// of the test episode is a 580-byte JPEG that quantises to ONE colour. Those are
-// dead air on a watchface, so step past them.
-var MIN_PALETTE = 3;
-var MAX_SKIP = 6;
-
 // Skip scenes with no dialogue. 14 of 150 windows in the test episode are
 // silent; landing on one shows an empty subtitle band for no reason.
 var SKIP_SILENT = SKIP_SILENT_CFG;
 
-// Which entry of `picked` each scene actually resolved to.
+// The frames actually worth showing, decided ONCE and then indexed.
 //
-// Skipping has to consume frames GLOBALLY, not per scene. Resolving scene N by
-// offsetting from picked[N] meant that whenever scene N skipped forward, scene
-// N+1 started from picked[N+1] — the very frame N had just landed on — and the
-// two showed the same picture. On real content that hit roughly one scene in
-// eight (`scene 0 frame 5` / `scene 1 frame 5`).
+// This used to be a read-time skip: fetch a frame, JPEG-decode it, count the
+// palette, and if it came out near-blank fetch the next one instead. That cost
+// a request AND a decode to discover a frame was black, and it was wrong as
+// well as expensive — skipping forward does not pass over a frame, it steals a
+// later scene's frame, so that scene then shows the same picture again. The
+// patch for that was a stateful `resolvedPick` chain threaded through the
+// cache, which only held as long as every cache hit remembered to feed it.
 //
-// So each scene starts one past wherever the previous scene ended up.
-var resolvedPick = {};
+// scenepolicy.js decides the whole list up front from the parsed index and the
+// cue list — no network, no decode — and scene -> frame becomes a list lookup
+// that a cache hit cannot desynchronise. See trickplayer-knowledge F-007/F-008.
+var scenes = null;
 
-function startPickFor(sceneIdx) {
-	var prev = resolvedPick[sceneIdx - 1];
-	return prev === undefined ? sceneIdx : prev + 1;
+function ensureScenes() {
+	if (scenes) return scenes;
+	var built = scenepolicy.buildScenes(index, picked, cues, {
+		intervalMs: SCENE_INTERVAL_MS,
+		skipSilent: SKIP_SILENT
+	});
+	scenes = built.scenes;
+	log("scenes: " + scenes.length + " of " + picked.length + " picked (" +
+		built.blanksSkipped + " near-blank, " + built.silentSkipped +
+		" silent), median frame " + (built.medianLength | 0) + "B");
+	return scenes;
 }
 
 // Build one real scene: range-fetch the JPEG, decode, palette, dither, pack.
-// `attempt` counts how many near-blank frames have been skipped.
-function makeRealScene(sceneIdx, cb, attempt) {
-	attempt = attempt || 0;
-
+function makeRealScene(sceneIdx, cb) {
 	// A cached scene costs no network and no decode. This is what keeps the
 	// watchface working away from the Plex server, which is most of the day.
-	if (attempt === 0) {
-		var hit = cache.get(sceneIdx);
-		if (hit) {
-			// Keep the chain intact: a cache hit must still tell the NEXT scene
-			// where this one landed, or the duplicate-frame bug returns whenever
-			// a run is served from cache.
-			if (typeof hit.f === "number") resolvedPick[sceneIdx] = hit.f;
-			cb(null, {
-				idx: sceneIdx, tsMs: hit.tsMs, cues: hit.cues,
-				packed: hit.packed, pal: hit.pal
-			});
-			return;
-		}
+	var hit = cache.get(sceneIdx);
+	if (hit) {
+		cb(null, {
+			idx: sceneIdx, tsMs: hit.tsMs, cues: hit.cues,
+			packed: hit.packed, pal: hit.pal
+		});
+		return;
 	}
 
 	loadIndex(function (err) {
 		if (err) { cb(err); return; }
 		loadSubs(function () {
-		var pick = (startPickFor(sceneIdx) + attempt) % picked.length;
-		var fi = picked[pick];
+		var list = ensureScenes();
+		if (!list.length) { cb(new Error("no usable scenes")); return; }
+
+		// Wrap at the end so a face left running loops rather than stalling.
+		var fi = list[((sceneIdx % list.length) + list.length) % list.length];
 		var ent = index[fi];
 		var url = plex.timelineUrl(cfg);
 
@@ -219,33 +219,16 @@ function makeRealScene(sceneIdx, cb, attempt) {
 				enc = render.encodeFrame(img.pixels, img.width, img.height, FW, FH);
 			} catch (e3) { cb(e3); return; }
 
-			var distinct = {}, nDistinct = 0, pi;
-			for (pi = 0; pi < enc.palette.length; pi++) {
-				if (!distinct[enc.palette[pi]]) { distinct[enc.palette[pi]] = 1; nDistinct++; }
-			}
-			if (nDistinct < MIN_PALETTE && attempt < MAX_SKIP) {
-				log("scene " + sceneIdx + " frame " + fi + " is near-blank (" +
-					nDistinct + " colours); skipping ahead");
-				makeRealScene(sceneIdx, cb, attempt + 1);
-				return;
-			}
-
 			// Cues belonging to this scene's window. A cue is owned by the scene
 			// it STARTS in, so a line straddling the boundary is not shown twice.
 			var lines = cues
 				? subsLib.cuesInWindow(cues, ent.tsMs, ent.tsMs + SCENE_INTERVAL_MS)
 				: [];
 
-			if (!lines.length && SKIP_SILENT && attempt < MAX_SKIP) {
-				log("scene " + sceneIdx + " frame " + fi + " has no dialogue; skipping ahead");
-				makeRealScene(sceneIdx, cb, attempt + 1);
-				return;
-			}
-
 			log("scene " + sceneIdx + " frame " + fi + " @" +
 				((ent.tsMs / 1000) | 0) + "s: " + jpgBytes.length + "B jpeg -> " +
-				enc.packed.length + "B, " + nDistinct + " colours, " +
-				lines.length + " cues, " + (Date.now() - t0) + "ms");
+				enc.packed.length + "B, " + lines.length + " cues, " +
+				(Date.now() - t0) + "ms");
 
 			// Cue separator on the wire is "\n", so flatten newlines inside a
 			// cue to spaces. The watch wraps text anyway.
@@ -255,17 +238,13 @@ function makeRealScene(sceneIdx, cb, attempt) {
 			}
 			if (!flat.length) flat.push(fmtTime(ent.tsMs));
 
-			resolvedPick[sceneIdx] = pick;
 			var built = {
 				idx: sceneIdx,
-				pick: pick,
 				tsMs: ent.tsMs,
 				cues: flat,
 				packed: Array.prototype.slice.call(enc.packed),
 				pal: Array.prototype.slice.call(enc.palette)
 			};
-			// Store the RESOLVED scene — after blank/silent skipping — so a
-			// replay lands on the same frame and needs none of that work again.
 			cache.put(sceneIdx, built);
 			cb(null, built);
 		});
@@ -454,6 +433,7 @@ Pebble.addEventListener("webviewclosed", function (e) {
 	cfg = c;
 	index = null;
 	picked = null;
+	scenes = null;
 	cues = null;
 	if (c.opts) {
 		if (c.opts.intervalMs) SCENE_INTERVAL_MS = c.opts.intervalMs;

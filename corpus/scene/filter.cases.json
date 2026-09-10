@@ -1,0 +1,128 @@
+{
+  "note": "Blank filtering and the usable floor, independent of binning. Expected values are hand-derived from the rules. medianLength uses the mean of the two middle values for an even-length list, and the comparison is `length >= (pct/100) * median` — a frame exactly on the threshold is kept.",
+  "cases": [
+    {
+      "name": "drops frames below the threshold",
+      "lengths": [
+        500,
+        10000,
+        12000,
+        11000,
+        400,
+        13000,
+        12500,
+        9000,
+        11500,
+        10500
+      ],
+      "blankThresholdPct": 15,
+      "minUsable": 4,
+      "expectMedianLength": 10750,
+      "expectUsableIndices": [
+        1,
+        2,
+        3,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "why": "median is 10750; 15% of it is 1612.5, so 500 and 400 go and nothing else does"
+    },
+    {
+      "name": "threshold is relative, not absolute",
+      "lengths": [
+        40,
+        800,
+        950,
+        1000,
+        900,
+        1050,
+        30,
+        980
+      ],
+      "blankThresholdPct": 15,
+      "minUsable": 4,
+      "expectMedianLength": 925,
+      "expectUsableIndices": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        7
+      ],
+      "why": "same shape as the case above at a tenth the scale. An absolute byte threshold would delete the whole episode; a median-relative one travels to content encoded at different settings"
+    },
+    {
+      "name": "floor: a uniformly tiny episode is not gutted",
+      "lengths": [
+        40,
+        42,
+        38,
+        41,
+        39,
+        43,
+        37,
+        40
+      ],
+      "blankThresholdPct": 15,
+      "minUsable": 6,
+      "expectMedianLength": 40,
+      "expectUsableIndices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "why": "every frame is near the median so none is blank — the filter is a no-op here and the floor is never reached. Included because it is the case people expect to fail"
+    },
+    {
+      "name": "floor: relaxes rather than returning almost nothing",
+      "lengths": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        9000,
+        9500,
+        10000
+      ],
+      "blankThresholdPct": 15,
+      "minUsable": 6,
+      "expectMedianLength": 100,
+      "expectUsableIndices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "why": "median is 100 so the six small frames pass and the three large ones do too — nothing is below 15 bytes. The point of the case is that a lopsided distribution does not accidentally delete the majority"
+    },
+    {
+      "name": "a single frame survives",
+      "lengths": [
+        5000
+      ],
+      "blankThresholdPct": 15,
+      "minUsable": 8,
+      "expectMedianLength": 5000,
+      "expectUsableIndices": [
+        0
+      ],
+      "why": "the floor cannot invent frames; minUsable is a target, not a promise"
+    }
+  ]
+}

@@ -22,6 +22,7 @@ const CORPUS = path.join(ROOT, "corpus");
 
 const timeline = require(path.join(ROOT, "src/pkjs/timeline.js"));
 const subs = require(path.join(ROOT, "src/pkjs/subs.js"));
+const scenepolicy = require(path.join(ROOT, "src/pkjs/scenepolicy.js"));
 
 const readJson = (rel) => JSON.parse(fs.readFileSync(path.join(CORPUS, rel), "utf8"));
 
@@ -109,10 +110,30 @@ function skip(group, name, why) { skipped.push({ group, name, why }); }
 // ------------------------------------------------------------------- scene
 
 (function checkScene() {
-  skip("scene", "selection policy",
-    "Pebble resolves scenes inside src/pkjs/index.js against a live Plex " +
-    "server and a cache — there is no pure function to point at the fixture. " +
-    "Extracting one is PLAN.md Phase 2 items 13-14.");
+  // Blank filtering and the usable floor, independent of binning policy.
+  const exp = readJson("scene/filter.cases.json");
+  for (const c of exp.cases) {
+    const index = c.lengths.map((len, i) => ({ tsMs: i * 2000, offset: 0, length: len }));
+    const picked = index.map((_, i) => i);
+    const r = scenepolicy.filterBlank(index, picked, c.blankThresholdPct);
+    check("scene", `${c.name}: medianLength`, r.medianLength, c.expectMedianLength);
+    check("scene", `${c.name}: usable`, r.usable, c.expectUsableIndices);
+  }
+
+  // The floor: filtering must never leave fewer usable scenes than the target
+  // when the input has enough frames to satisfy it.
+  const allBlank = Array.from({ length: 12 }, (_, i) => ({ tsMs: i * 2000, offset: 0, length: 10 }));
+  allBlank[0].length = 100000; // one huge frame drags the median up
+  const built = scenepolicy.buildScenes(
+    allBlank, allBlank.map((_, i) => i), null,
+    { intervalMs: 10000, skipSilent: false, minUsable: 8 });
+  check("scene", "floor: keeps everything rather than degrading to nothing",
+    built.scenes.length, allBlank.length);
+
+  skip("scene", "binning policy",
+    "The corpus scene cases use nearest-to-midpoint (tuner) and native " +
+    "timings (F-001). This build uses first-frame-at-or-after each interval " +
+    "boundary — see CONFORMANCE.md, 'Three fixed-interval policies'.");
 })();
 
 // -------------------------------------------------------------------- cues

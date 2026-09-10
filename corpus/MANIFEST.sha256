@@ -4,6 +4,7 @@ d62dc13c8311a9ed4a56fd2e232eeb16d4d249a92d911ffdde36d11b4a2e333d  ./README.md
 b49eb9fe44bee9b297593efe6b2256caaaced7b3cf6743c5366e86fa48146f1d  ./scene/episode.cues.json
 d97288c8ec904a9265011e02caaed99e8941e14e1db6e1e0f48c64234bde9881  ./scene/episode.expected.json
 0f1425e0eaf4143099a74b5a46a4a5ea952e7c35bd6a320b7cc6adf8cec9630a  ./scene/episode.frames.json
+cd812242b83b3954e0a0eb23f2545f72d416b4de7e9819f3c73d3d986d59fd39  ./scene/filter.cases.json
 6e7f37a942a5473f04bce29a2e0a039ad4283c93059e08a7dfe22128b5bf0f40  ./subs/torture.expected.json
 1a38e88ad1b36a10464d930d3a5ee473727988083be0392b7f89563d1ffd359d  ./subs/torture.srt
 4ed39f09c2ee7c6d38617f0d1c272a92448cad850b118c6d7c2c0c6be1c46697  ./timeline/multiplier.bif
