@@ -368,7 +368,6 @@
 			title: state.chosen.title,
 			durMs: state.chosen.durMs,
 			opts: {
-				intervalMs: parseInt($("interval").value, 10),
 				skipSilent: $("skip").value === "1"
 			}
 		};

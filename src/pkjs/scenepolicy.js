@@ -1,32 +1,33 @@
-// Scene selection policy — which frames are worth showing, decided ONCE.
+// Scene selection policy — which frames are worth showing, decided ONCE, with
+// no network and no decode.
 //
-// Written to run under both PebbleKit JS and Node, like timeline.js and
-// subs.js, so the conformance runner can exercise the shipping code.
+// Dual-runtime (PebbleKit JS and Node) like timeline.js and subs.js, so the
+// conformance runner exercises the shipping code.
 //
-// Encodes three shared rules (trickplayer-knowledge/findings):
+// The policy, per trickplayer-knowledge findings:
 //
-//   F-007  A near-blank frame is detectable from its COMPRESSED BYTE LENGTH,
-//          before any network happens. Episodes open, close and fade through
-//          black; those frames quantise to one colour and are dead air. The
-//          threshold is relative to this episode's own median length, so it
-//          travels to content encoded at different settings.
+//   F-001  Bin by the SOURCE'S OWN frame timings, not a synthetic fixed
+//          interval. Every usable frame is its own scene candidate, so scenes
+//          follow the content's real cuts instead of a clock. A scene's window
+//          runs to the NEXT kept frame, so time folded out by skipping is not
+//          lost — the scene simply widens and keeps its cues.
 //
-//   F-008  Filter ONCE, up front. The obvious alternative — step forward past
-//          a bad frame when a scene asks for it — does not pass over a frame,
-//          it STEALS a later scene's frame, and that scene then shows it
-//          again. This build shipped that bug and patched it with a stateful
-//          `resolvedPick` chain threaded through the cache; filtering up front
-//          removes the whole class instead, and makes scene -> frame a plain
-//          list lookup that a cache hit cannot desynchronise.
+//   F-036  Duplicate frames are detected from DECLARED LENGTH alone. Hashing
+//          the bytes costs a full-track read (measured: 1815 of 1815 frames,
+//          10.48 MB, 10.2 s) and buys almost nothing — the length heuristic
+//          found 99.7% of duplicates across three real episodes with one false
+//          positive in 6,149 frames. That is what makes F-001 affordable here
+//          at all, and keeps this a pure function of the index.
 //
-//   F-009  Floor the filter. An item with no dialogue, or one whose frames are
-//          uniformly tiny, would otherwise be filtered down to nothing. A
-//          repetitive face beats an empty one.
+//   F-007  Near-blank frames are judged by compressed byte length against this
+//          episode's own median. Episodes open, close and fade through black.
 //
-// The old path fetched AND JPEG-decoded a frame just to discover it was black,
-// then fetched another. Judging by declared length costs no request and no
-// decode — on the most constrained of the three platforms, that is the whole
-// point.
+//   F-008  Filter ONCE, up front. Skipping at read time steals a later scene's
+//          frame and shows it twice.
+//
+//   F-009  Floor the filters: a repetitive face beats an empty one.
+//
+//   F-010  A cue belongs to the window it STARTS in.
 
 function median(nums) {
 	if (!nums.length) return 0;
@@ -49,44 +50,96 @@ function filterBlank(index, picked, pct) {
 	return { usable: out, medianLength: med };
 }
 
-// The frames actually worth showing. Scene N is scenes[N], and that is the
-// whole mapping.
+// Byte-identical-to-an-earlier-frame, inferred from declared length (F-036).
+// Compare against the current run's REPRESENTATIVE rather than the immediate
+// neighbour, so a run survives a frame that merely happens to match the one
+// before it.
+function lengthRunDuplicates(index) {
+	var dup = new Array(index.length);
+	dup[0] = false;
+	var rep = 0;
+	for (var i = 1; i < index.length; i++) {
+		if (index[i].length === index[rep].length) {
+			dup[i] = true;
+		} else {
+			dup[i] = false;
+			rep = i;
+		}
+	}
+	return dup;
+}
+
+function cueCountIn(cues, fromMs, toMs) {
+	if (!cues) return 0;
+	var n = 0;
+	for (var i = 0; i < cues.length; i++) {
+		if (cues[i].startMs >= fromMs && cues[i].startMs < toMs) n++;
+	}
+	return n;
+}
+
+// Build the scene list.
 //
-// index    [{ tsMs, offset, length }]  the parsed trick-play index
-// picked   [frameIndex]                cadence already applied
+// index    [{ tsMs, offset, length }]  the whole parsed trick-play index
 // cues     [{ startMs, endMs, text }]  or null if none loaded
-// opts     { intervalMs, blankPct, skipSilent, minUsable }
-function buildScenes(index, picked, cues, opts) {
+// opts     { durationMs, blankPct, skipSilent, minUsable }
+//
+// Returns { scenes: [{ frameIndex, windowStartMs, windowEndMs }], ... }
+function buildScenes(index, cues, opts) {
+	opts = opts || {};
 	var blankPct = opts.blankPct === undefined ? 15 : opts.blankPct;
 	var minUsable = opts.minUsable === undefined ? 8 : opts.minUsable;
-	var target = Math.min(minUsable, picked.length);
+	var all = [];
+	var i;
+	for (i = 0; i < index.length; i++) all.push(i);
+	var target = Math.min(minUsable, all.length);
 
-	var filtered = filterBlank(index, picked, blankPct);
-	var usable = filtered.usable;
+	var blank = filterBlank(index, all, blankPct);
+	var dup = lengthRunDuplicates(index);
 
-	// Silent windows go too, but only if that leaves enough behind.
-	if (opts.skipSilent && cues && cues.length) {
-		var withCues = [];
-		for (var i = 0; i < usable.length; i++) {
-			var ts = index[usable[i]].tsMs;
-			var n = 0;
-			for (var c = 0; c < cues.length; c++) {
-				if (cues[c].startMs >= ts && cues[c].startMs < ts + opts.intervalMs) { n++; break; }
-			}
-			if (n) withCues.push(usable[i]);
-		}
-		if (withCues.length >= target) usable = withCues;
+	var kept = [];
+	for (i = 0; i < blank.usable.length; i++) {
+		if (!dup[blank.usable[i]]) kept.push(blank.usable[i]);
+	}
+	// Dropping duplicates must not gut a static episode.
+	if (kept.length < target) kept = blank.usable.slice();
+	// Nor must blank filtering.
+	if (kept.length < target) kept = all;
+
+	var durationMs = opts.durationMs ||
+		(index.length ? index[index.length - 1].tsMs : 0);
+
+	// A scene runs from its frame to the next KEPT frame, so the time of every
+	// skipped frame folds into the scene that replaces it and its cues survive.
+	var scenes = [];
+	for (i = 0; i < kept.length; i++) {
+		scenes.push({
+			frameIndex: kept[i],
+			windowStartMs: index[kept[i]].tsMs,
+			windowEndMs: i + 1 < kept.length ? index[kept[i + 1]].tsMs : durationMs
+		});
 	}
 
-	// Floor: if blank filtering alone already went too far, keep everything
-	// rather than degrading to nothing.
-	if (usable.length < target) usable = picked.slice();
+	var emptyRemoved = 0;
+	if (opts.skipSilent && cues && cues.length) {
+		var withCues = [];
+		for (i = 0; i < scenes.length; i++) {
+			if (cueCountIn(cues, scenes[i].windowStartMs, scenes[i].windowEndMs)) {
+				withCues.push(scenes[i]);
+			}
+		}
+		if (withCues.length >= target) {
+			emptyRemoved = scenes.length - withCues.length;
+			scenes = withCues;
+		}
+	}
 
 	return {
-		scenes: usable,
-		medianLength: filtered.medianLength,
-		blanksSkipped: picked.length - filtered.usable.length,
-		silentSkipped: filtered.usable.length - usable.length
+		scenes: scenes,
+		medianLength: blank.medianLength,
+		blanksSkipped: all.length - blank.usable.length,
+		duplicatesSkipped: dup.filter(function (d) { return d; }).length,
+		emptyScenesRemoved: emptyRemoved
 	};
 }
 
@@ -94,6 +147,7 @@ if (typeof module !== "undefined") {
 	module.exports = {
 		median: median,
 		filterBlank: filterBlank,
+		lengthRunDuplicates: lengthRunDuplicates,
 		buildScenes: buildScenes
 	};
 }

@@ -43,7 +43,6 @@ var scenepolicy = require("./scenepolicy.js");
 var jpegLib = require("./jpeg.js");
 var render = require("./render.js");
 
-var SCENE_INTERVAL_MS = 10000;   // scene granularity, independent of BIF spacing
 var SKIP_SILENT_CFG = true;
 
 // Config page URL. Must be hosted over https for the Pebble app's webview.
@@ -87,7 +86,6 @@ function loadCfg() {
 	}
 }
 cfg = loadCfg();
-if (cfg && cfg.opts && cfg.opts.intervalMs) SCENE_INTERVAL_MS = cfg.opts.intervalMs;
 if (cfg && cfg.opts && typeof cfg.opts.skipSilent === "boolean") SKIP_SILENT_CFG = cfg.opts.skipSilent;
 
 var subsLib = require("./subs.js");
@@ -96,7 +94,6 @@ var cache = require("./cache.js");
 if (cfg) cache.setProfile(cfg.timelineRef, FW, FH, 4);
 
 var index = null;      // parsed BIF index
-var picked = null;     // frame indices chosen at SCENE_INTERVAL_MS
 var cues = null;       // parsed subtitle cues
 var loading = false;
 
@@ -143,9 +140,8 @@ function loadIndex(cb) {
 			if (err2) { cb(err2); return; }
 			try {
 				index = timeline.parseIndex(idxBytes, header);
-				picked = timeline.pickFrames(index, SCENE_INTERVAL_MS);
 			} catch (e2) { cb(e2); return; }
-			log("index ready: " + picked.length + " scenes");
+			log("index ready: " + index.length + " frames");
 			cb(null);
 		});
 	});
@@ -172,14 +168,15 @@ var scenes = null;
 
 function ensureScenes() {
 	if (scenes) return scenes;
-	var built = scenepolicy.buildScenes(index, picked, cues, {
-		intervalMs: SCENE_INTERVAL_MS,
+	var built = scenepolicy.buildScenes(index, cues, {
+		durationMs: index.length ? index[index.length - 1].tsMs : 0,
 		skipSilent: SKIP_SILENT
 	});
 	scenes = built.scenes;
-	log("scenes: " + scenes.length + " of " + picked.length + " picked (" +
-		built.blanksSkipped + " near-blank, " + built.silentSkipped +
-		" silent), median frame " + (built.medianLength | 0) + "B");
+	log("scenes: " + scenes.length + " of " + index.length + " frames (" +
+		built.blanksSkipped + " near-blank, " + built.duplicatesSkipped +
+		" duplicate, " + built.emptyScenesRemoved + " silent), median frame " +
+		(built.medianLength | 0) + "B");
 	return scenes;
 }
 
@@ -203,7 +200,8 @@ function makeRealScene(sceneIdx, cb) {
 		if (!list.length) { cb(new Error("no usable scenes")); return; }
 
 		// Wrap at the end so a face left running loops rather than stalling.
-		var fi = list[((sceneIdx % list.length) + list.length) % list.length];
+		var sc = list[((sceneIdx % list.length) + list.length) % list.length];
+		var fi = sc.frameIndex;
 		var ent = index[fi];
 		var url = plex.timelineUrl(cfg);
 
@@ -219,8 +217,11 @@ function makeRealScene(sceneIdx, cb) {
 
 			// Cues belonging to this scene's window. A cue is owned by the scene
 			// it STARTS in, so a line straddling the boundary is not shown twice.
+			// The window runs to the NEXT kept frame, not a fixed interval —
+			// so the time of every skipped duplicate folds into this scene and
+			// its cues come with it (F-001).
 			var lines = cues
-				? subsLib.cuesInWindow(cues, ent.tsMs, ent.tsMs + SCENE_INTERVAL_MS)
+				? subsLib.cuesInWindow(cues, sc.windowStartMs, sc.windowEndMs)
 				: [];
 
 			log("scene " + sceneIdx + " frame " + fi + " @" +
@@ -326,7 +327,7 @@ function schedulePrefetch(fromIdx) {
 function runPrefetch() {
 	// Never compete with an actual send; try again once the queue drains.
 	if (sending || queue.length) { setTimeout(runPrefetch, 1500); return; }
-	if (prefetchNext < 0 || !picked) { prefetching = false; return; }
+	if (prefetchNext < 0 || !index) { prefetching = false; return; }
 	if (prefetchNext >= lastServed + PREFETCH_AHEAD) { prefetching = false; return; }
 
 	var idx = prefetchNext++;
@@ -469,19 +470,16 @@ Pebble.addEventListener("webviewclosed", function (e) {
 	// New episode: everything derived from the old one is now wrong.
 	cfg = c;
 	index = null;
-	picked = null;
 	scenes = null;
 	cues = null;
 	if (c.opts) {
-		if (c.opts.intervalMs) SCENE_INTERVAL_MS = c.opts.intervalMs;
 		if (typeof c.opts.skipSilent === "boolean") SKIP_SILENT = c.opts.skipSilent;
 	}
 	// Re-key the cache so frames from the previous episode are never served.
 	cache.setProfile(c.timelineRef, FW, FH, 4);
 	lastServed = 0;
 	prefetchNext = -1;
-	log("configured: " + (c.title || c.timelineRef) + ", scene interval " +
-		SCENE_INTERVAL_MS + "ms");
+	log("configured: " + (c.title || c.timelineRef));
 });
 
 Pebble.addEventListener("ready", function () {

@@ -137,20 +137,46 @@ function skip(group, name, why) { skipped.push({ group, name, why }); }
     check("scene", `${c.name}: usable`, r.usable, c.expectUsableIndices);
   }
 
-  // The floor: filtering must never leave fewer usable scenes than the target
-  // when the input has enough frames to satisfy it.
-  const allBlank = Array.from({ length: 12 }, (_, i) => ({ tsMs: i * 2000, offset: 0, length: 10 }));
-  allBlank[0].length = 100000; // one huge frame drags the median up
-  const built = scenepolicy.buildScenes(
-    allBlank, allBlank.map((_, i) => i), null,
-    { intervalMs: 10000, skipSilent: false, minUsable: 8 });
+  // The floor: dropping duplicates must not gut a static episode. Every frame
+  // here shares a length, so length-run dedup would leave almost nothing.
+  const flat = Array.from({ length: 12 }, (_, i) => ({ tsMs: i * 2000, offset: i * 10, length: 10 }));
+  flat[0].length = 100000; // one large frame drags the median up
+  const floored = scenepolicy.buildScenes(flat, null, {
+    durationMs: 24000, skipSilent: false, minUsable: 8,
+  });
   check("scene", "floor: keeps everything rather than degrading to nothing",
-    built.scenes.length, allBlank.length);
+    floored.scenes.length, flat.length);
 
-  skip("scene", "binning policy",
-    "The corpus scene cases use nearest-to-midpoint (tuner) and native " +
-    "timings (F-001). This build uses first-frame-at-or-after each interval " +
-    "boundary — see CONFORMANCE.md, 'Three fixed-interval policies'.");
+  // The adopted policy: native frame timings, length-run duplicate skipping,
+  // empty-scene removal (F-001 + F-036).
+  const fx = readJson("scene/episode.frames.json");
+  const cx = readJson("scene/episode.cues.json");
+  const want = readJson("scene/episode.expected.json").cases.adopted.expect;
+  const built = scenepolicy.buildScenes(fx.frames, cx.cues, {
+    durationMs: fx.durationMs, blankPct: 15, skipSilent: true, minUsable: 8,
+  });
+  check("scene", "adopted: sceneCount", built.scenes.length, want.sceneCount);
+
+  const seen = new Set();
+  let bytes = 0, cueTotal = 0;
+  for (const sc of built.scenes) {
+    const f = fx.frames[sc.frameIndex];
+    if (!seen.has(f.offset)) { seen.add(f.offset); bytes += f.length; }
+    cueTotal += cx.cues.filter(
+      (c) => c.startMs >= sc.windowStartMs && c.startMs < sc.windowEndMs).length;
+  }
+  check("scene", "adopted: sceneBytes", bytes, want.sceneBytes);
+  check("scene", "adopted: uniqueFramesShipped", seen.size, want.uniqueFramesShipped);
+  check("scene", "adopted: avgCuesPerScene",
+    +(cueTotal / built.scenes.length).toFixed(4), want.avgCuesPerScene);
+
+  // Duplicate detection is from declared length alone — no bytes fetched.
+  const dup = scenepolicy.lengthRunDuplicates(fx.frames);
+  const truth = fx.frames.map((f) => f.duplicateOfIndex !== null);
+  let fp = 0, missed = 0;
+  dup.forEach((d, i) => { if (d && !truth[i]) fp++; if (!d && truth[i]) missed++; });
+  check("scene", "length-run dedup: no false positives on the fixture", fp, 0);
+  check("scene", "length-run dedup: none missed on the fixture", missed, 0);
 })();
 
 // -------------------------------------------------------------------- cues
