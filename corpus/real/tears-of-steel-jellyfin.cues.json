@@ -1,0 +1,316 @@
+{
+  "note": "Cue TIMINGS only. No dialogue text — nothing here is copyrightable.",
+  "source": {
+    "title": "Tears of Steel",
+    "attribution": "Tears of Steel (c) 2012 Blender Foundation, mango.blender.org — CC BY 3.0",
+    "provider": "jellyfin"
+  },
+  "embedded": false,
+  "cueCount": 76,
+  "cues": [
+    {
+      "startMs": 23000,
+      "endMs": 24500
+    },
+    {
+      "startMs": 25000,
+      "endMs": 26999
+    },
+    {
+      "startMs": 27000,
+      "endMs": 30500
+    },
+    {
+      "startMs": 30800,
+      "endMs": 34000
+    },
+    {
+      "startMs": 34500,
+      "endMs": 36000
+    },
+    {
+      "startMs": 37000,
+      "endMs": 38000
+    },
+    {
+      "startMs": 38001,
+      "endMs": 40068
+    },
+    {
+      "startMs": 40069,
+      "endMs": 42176
+    },
+    {
+      "startMs": 42200,
+      "endMs": 45000
+    },
+    {
+      "startMs": 50000,
+      "endMs": 53500
+    },
+    {
+      "startMs": 61000,
+      "endMs": 63000
+    },
+    {
+      "startMs": 117000,
+      "endMs": 119000
+    },
+    {
+      "startMs": 131000,
+      "endMs": 133000
+    },
+    {
+      "startMs": 136000,
+      "endMs": 138000
+    },
+    {
+      "startMs": 191000,
+      "endMs": 192000
+    },
+    {
+      "startMs": 193000,
+      "endMs": 195000
+    },
+    {
+      "startMs": 197000,
+      "endMs": 198000
+    },
+    {
+      "startMs": 199000,
+      "endMs": 201000
+    },
+    {
+      "startMs": 201500,
+      "endMs": 203000
+    },
+    {
+      "startMs": 203500,
+      "endMs": 206500
+    },
+    {
+      "startMs": 208000,
+      "endMs": 212000
+    },
+    {
+      "startMs": 213000,
+      "endMs": 217000
+    },
+    {
+      "startMs": 223000,
+      "endMs": 224000
+    },
+    {
+      "startMs": 224500,
+      "endMs": 225700
+    },
+    {
+      "startMs": 226000,
+      "endMs": 227000
+    },
+    {
+      "startMs": 231000,
+      "endMs": 233000
+    },
+    {
+      "startMs": 233500,
+      "endMs": 234500
+    },
+    {
+      "startMs": 235000,
+      "endMs": 236000
+    },
+    {
+      "startMs": 237000,
+      "endMs": 238500
+    },
+    {
+      "startMs": 240000,
+      "endMs": 241000
+    },
+    {
+      "startMs": 241500,
+      "endMs": 244500
+    },
+    {
+      "startMs": 245000,
+      "endMs": 248000
+    },
+    {
+      "startMs": 292000,
+      "endMs": 295000
+    },
+    {
+      "startMs": 296500,
+      "endMs": 298000
+    },
+    {
+      "startMs": 299000,
+      "endMs": 301000
+    },
+    {
+      "startMs": 302500,
+      "endMs": 305000
+    },
+    {
+      "startMs": 316000,
+      "endMs": 317000
+    },
+    {
+      "startMs": 318000,
+      "endMs": 320000
+    },
+    {
+      "startMs": 321000,
+      "endMs": 323000
+    },
+    {
+      "startMs": 325000,
+      "endMs": 328000
+    },
+    {
+      "startMs": 339000,
+      "endMs": 341000
+    },
+    {
+      "startMs": 343000,
+      "endMs": 344000
+    },
+    {
+      "startMs": 345000,
+      "endMs": 346000
+    },
+    {
+      "startMs": 347000,
+      "endMs": 350000
+    },
+    {
+      "startMs": 356000,
+      "endMs": 359000
+    },
+    {
+      "startMs": 359500,
+      "endMs": 360999
+    },
+    {
+      "startMs": 361000,
+      "endMs": 363000
+    },
+    {
+      "startMs": 365000,
+      "endMs": 366000
+    },
+    {
+      "startMs": 366500,
+      "endMs": 368500
+    },
+    {
+      "startMs": 371500,
+      "endMs": 372500
+    },
+    {
+      "startMs": 373000,
+      "endMs": 374000
+    },
+    {
+      "startMs": 374000,
+      "endMs": 375000
+    },
+    {
+      "startMs": 379000,
+      "endMs": 380000
+    },
+    {
+      "startMs": 381000,
+      "endMs": 382999
+    },
+    {
+      "startMs": 383000,
+      "endMs": 385000
+    },
+    {
+      "startMs": 386000,
+      "endMs": 387000
+    },
+    {
+      "startMs": 387001,
+      "endMs": 388999
+    },
+    {
+      "startMs": 389000,
+      "endMs": 390000
+    },
+    {
+      "startMs": 390500,
+      "endMs": 393000
+    },
+    {
+      "startMs": 396000,
+      "endMs": 397000
+    },
+    {
+      "startMs": 407000,
+      "endMs": 408000
+    },
+    {
+      "startMs": 410000,
+      "endMs": 411000
+    },
+    {
+      "startMs": 419000,
+      "endMs": 420500
+    },
+    {
+      "startMs": 422000,
+      "endMs": 423000
+    },
+    {
+      "startMs": 428000,
+      "endMs": 429500
+    },
+    {
+      "startMs": 430000,
+      "endMs": 431000
+    },
+    {
+      "startMs": 493000,
+      "endMs": 494000
+    },
+    {
+      "startMs": 502000,
+      "endMs": 503999
+    },
+    {
+      "startMs": 504000,
+      "endMs": 505000
+    },
+    {
+      "startMs": 506000,
+      "endMs": 508000
+    },
+    {
+      "startMs": 518000,
+      "endMs": 520000
+    },
+    {
+      "startMs": 534000,
+      "endMs": 536000
+    },
+    {
+      "startMs": 538000,
+      "endMs": 539040
+    },
+    {
+      "startMs": 559000,
+      "endMs": 560000
+    },
+    {
+      "startMs": 562000,
+      "endMs": 564000
+    },
+    {
+      "startMs": 566000,
+      "endMs": 567000
+    }
+  ]
+}

@@ -1,0 +1,585 @@
+{
+  "note": "Captured from a real Jellyfin server. Unlike the Plex fixtures there are NO byte offsets and NO per-frame lengths: a thumbnail is a crop out of a tile sheet (F-038). lengthBytes is null because that is the honest answer, not because it is missing.",
+  "source": {
+    "title": "Tears of Steel",
+    "attribution": "Tears of Steel (c) 2012 Blender Foundation, mango.blender.org — CC BY 3.0",
+    "provider": "jellyfin"
+  },
+  "geometry": {
+    "tileWidth": 10,
+    "tileHeight": 10,
+    "thumbWidth": 320,
+    "thumbHeight": 132,
+    "intervalMs": 10000,
+    "thumbnailCount": 73,
+    "thumbnailsPerSheet": 100,
+    "sheetCount": 1,
+    "finalSheetCells": 73,
+    "finalSheetIsPartial": true
+  },
+  "sheetsInFixture": 1,
+  "frameSizeHint": {
+    "available": false,
+    "why": "a thumbnail has no byte length of its own; F-007 and F-036 are unavailable here"
+  },
+  "cropBoxes": [
+    {
+      "index": 0,
+      "tsMs": 0,
+      "sheet": 0,
+      "x": 0,
+      "y": 0,
+      "w": 320,
+      "h": 132
+    },
+    {
+      "index": 1,
+      "tsMs": 10000,
+      "sheet": 0,
+      "x": 320,
+      "y": 0,
+      "w": 320,
+      "h": 132
+    },
+    {
+      "index": 9,
+      "tsMs": 90000,
+      "sheet": 0,
+      "x": 2880,
+      "y": 0,
+      "w": 320,
+      "h": 132
+    },
+    {
+      "index": 10,
+      "tsMs": 100000,
+      "sheet": 0,
+      "x": 0,
+      "y": 132,
+      "w": 320,
+      "h": 132
+    },
+    {
+      "index": 72,
+      "tsMs": 720000,
+      "sheet": 0,
+      "x": 640,
+      "y": 924,
+      "w": 320,
+      "h": 132
+    }
+  ],
+  "frames": [
+    {
+      "index": 0,
+      "tsMs": 0,
+      "sheet": 0,
+      "cell": 0,
+      "lengthBytes": null
+    },
+    {
+      "index": 1,
+      "tsMs": 10000,
+      "sheet": 0,
+      "cell": 1,
+      "lengthBytes": null
+    },
+    {
+      "index": 2,
+      "tsMs": 20000,
+      "sheet": 0,
+      "cell": 2,
+      "lengthBytes": null
+    },
+    {
+      "index": 3,
+      "tsMs": 30000,
+      "sheet": 0,
+      "cell": 3,
+      "lengthBytes": null
+    },
+    {
+      "index": 4,
+      "tsMs": 40000,
+      "sheet": 0,
+      "cell": 4,
+      "lengthBytes": null
+    },
+    {
+      "index": 5,
+      "tsMs": 50000,
+      "sheet": 0,
+      "cell": 5,
+      "lengthBytes": null
+    },
+    {
+      "index": 6,
+      "tsMs": 60000,
+      "sheet": 0,
+      "cell": 6,
+      "lengthBytes": null
+    },
+    {
+      "index": 7,
+      "tsMs": 70000,
+      "sheet": 0,
+      "cell": 7,
+      "lengthBytes": null
+    },
+    {
+      "index": 8,
+      "tsMs": 80000,
+      "sheet": 0,
+      "cell": 8,
+      "lengthBytes": null
+    },
+    {
+      "index": 9,
+      "tsMs": 90000,
+      "sheet": 0,
+      "cell": 9,
+      "lengthBytes": null
+    },
+    {
+      "index": 10,
+      "tsMs": 100000,
+      "sheet": 0,
+      "cell": 10,
+      "lengthBytes": null
+    },
+    {
+      "index": 11,
+      "tsMs": 110000,
+      "sheet": 0,
+      "cell": 11,
+      "lengthBytes": null
+    },
+    {
+      "index": 12,
+      "tsMs": 120000,
+      "sheet": 0,
+      "cell": 12,
+      "lengthBytes": null
+    },
+    {
+      "index": 13,
+      "tsMs": 130000,
+      "sheet": 0,
+      "cell": 13,
+      "lengthBytes": null
+    },
+    {
+      "index": 14,
+      "tsMs": 140000,
+      "sheet": 0,
+      "cell": 14,
+      "lengthBytes": null
+    },
+    {
+      "index": 15,
+      "tsMs": 150000,
+      "sheet": 0,
+      "cell": 15,
+      "lengthBytes": null
+    },
+    {
+      "index": 16,
+      "tsMs": 160000,
+      "sheet": 0,
+      "cell": 16,
+      "lengthBytes": null
+    },
+    {
+      "index": 17,
+      "tsMs": 170000,
+      "sheet": 0,
+      "cell": 17,
+      "lengthBytes": null
+    },
+    {
+      "index": 18,
+      "tsMs": 180000,
+      "sheet": 0,
+      "cell": 18,
+      "lengthBytes": null
+    },
+    {
+      "index": 19,
+      "tsMs": 190000,
+      "sheet": 0,
+      "cell": 19,
+      "lengthBytes": null
+    },
+    {
+      "index": 20,
+      "tsMs": 200000,
+      "sheet": 0,
+      "cell": 20,
+      "lengthBytes": null
+    },
+    {
+      "index": 21,
+      "tsMs": 210000,
+      "sheet": 0,
+      "cell": 21,
+      "lengthBytes": null
+    },
+    {
+      "index": 22,
+      "tsMs": 220000,
+      "sheet": 0,
+      "cell": 22,
+      "lengthBytes": null
+    },
+    {
+      "index": 23,
+      "tsMs": 230000,
+      "sheet": 0,
+      "cell": 23,
+      "lengthBytes": null
+    },
+    {
+      "index": 24,
+      "tsMs": 240000,
+      "sheet": 0,
+      "cell": 24,
+      "lengthBytes": null
+    },
+    {
+      "index": 25,
+      "tsMs": 250000,
+      "sheet": 0,
+      "cell": 25,
+      "lengthBytes": null
+    },
+    {
+      "index": 26,
+      "tsMs": 260000,
+      "sheet": 0,
+      "cell": 26,
+      "lengthBytes": null
+    },
+    {
+      "index": 27,
+      "tsMs": 270000,
+      "sheet": 0,
+      "cell": 27,
+      "lengthBytes": null
+    },
+    {
+      "index": 28,
+      "tsMs": 280000,
+      "sheet": 0,
+      "cell": 28,
+      "lengthBytes": null
+    },
+    {
+      "index": 29,
+      "tsMs": 290000,
+      "sheet": 0,
+      "cell": 29,
+      "lengthBytes": null
+    },
+    {
+      "index": 30,
+      "tsMs": 300000,
+      "sheet": 0,
+      "cell": 30,
+      "lengthBytes": null
+    },
+    {
+      "index": 31,
+      "tsMs": 310000,
+      "sheet": 0,
+      "cell": 31,
+      "lengthBytes": null
+    },
+    {
+      "index": 32,
+      "tsMs": 320000,
+      "sheet": 0,
+      "cell": 32,
+      "lengthBytes": null
+    },
+    {
+      "index": 33,
+      "tsMs": 330000,
+      "sheet": 0,
+      "cell": 33,
+      "lengthBytes": null
+    },
+    {
+      "index": 34,
+      "tsMs": 340000,
+      "sheet": 0,
+      "cell": 34,
+      "lengthBytes": null
+    },
+    {
+      "index": 35,
+      "tsMs": 350000,
+      "sheet": 0,
+      "cell": 35,
+      "lengthBytes": null
+    },
+    {
+      "index": 36,
+      "tsMs": 360000,
+      "sheet": 0,
+      "cell": 36,
+      "lengthBytes": null
+    },
+    {
+      "index": 37,
+      "tsMs": 370000,
+      "sheet": 0,
+      "cell": 37,
+      "lengthBytes": null
+    },
+    {
+      "index": 38,
+      "tsMs": 380000,
+      "sheet": 0,
+      "cell": 38,
+      "lengthBytes": null
+    },
+    {
+      "index": 39,
+      "tsMs": 390000,
+      "sheet": 0,
+      "cell": 39,
+      "lengthBytes": null
+    },
+    {
+      "index": 40,
+      "tsMs": 400000,
+      "sheet": 0,
+      "cell": 40,
+      "lengthBytes": null
+    },
+    {
+      "index": 41,
+      "tsMs": 410000,
+      "sheet": 0,
+      "cell": 41,
+      "lengthBytes": null
+    },
+    {
+      "index": 42,
+      "tsMs": 420000,
+      "sheet": 0,
+      "cell": 42,
+      "lengthBytes": null
+    },
+    {
+      "index": 43,
+      "tsMs": 430000,
+      "sheet": 0,
+      "cell": 43,
+      "lengthBytes": null
+    },
+    {
+      "index": 44,
+      "tsMs": 440000,
+      "sheet": 0,
+      "cell": 44,
+      "lengthBytes": null
+    },
+    {
+      "index": 45,
+      "tsMs": 450000,
+      "sheet": 0,
+      "cell": 45,
+      "lengthBytes": null
+    },
+    {
+      "index": 46,
+      "tsMs": 460000,
+      "sheet": 0,
+      "cell": 46,
+      "lengthBytes": null
+    },
+    {
+      "index": 47,
+      "tsMs": 470000,
+      "sheet": 0,
+      "cell": 47,
+      "lengthBytes": null
+    },
+    {
+      "index": 48,
+      "tsMs": 480000,
+      "sheet": 0,
+      "cell": 48,
+      "lengthBytes": null
+    },
+    {
+      "index": 49,
+      "tsMs": 490000,
+      "sheet": 0,
+      "cell": 49,
+      "lengthBytes": null
+    },
+    {
+      "index": 50,
+      "tsMs": 500000,
+      "sheet": 0,
+      "cell": 50,
+      "lengthBytes": null
+    },
+    {
+      "index": 51,
+      "tsMs": 510000,
+      "sheet": 0,
+      "cell": 51,
+      "lengthBytes": null
+    },
+    {
+      "index": 52,
+      "tsMs": 520000,
+      "sheet": 0,
+      "cell": 52,
+      "lengthBytes": null
+    },
+    {
+      "index": 53,
+      "tsMs": 530000,
+      "sheet": 0,
+      "cell": 53,
+      "lengthBytes": null
+    },
+    {
+      "index": 54,
+      "tsMs": 540000,
+      "sheet": 0,
+      "cell": 54,
+      "lengthBytes": null
+    },
+    {
+      "index": 55,
+      "tsMs": 550000,
+      "sheet": 0,
+      "cell": 55,
+      "lengthBytes": null
+    },
+    {
+      "index": 56,
+      "tsMs": 560000,
+      "sheet": 0,
+      "cell": 56,
+      "lengthBytes": null
+    },
+    {
+      "index": 57,
+      "tsMs": 570000,
+      "sheet": 0,
+      "cell": 57,
+      "lengthBytes": null
+    },
+    {
+      "index": 58,
+      "tsMs": 580000,
+      "sheet": 0,
+      "cell": 58,
+      "lengthBytes": null
+    },
+    {
+      "index": 59,
+      "tsMs": 590000,
+      "sheet": 0,
+      "cell": 59,
+      "lengthBytes": null
+    },
+    {
+      "index": 60,
+      "tsMs": 600000,
+      "sheet": 0,
+      "cell": 60,
+      "lengthBytes": null
+    },
+    {
+      "index": 61,
+      "tsMs": 610000,
+      "sheet": 0,
+      "cell": 61,
+      "lengthBytes": null
+    },
+    {
+      "index": 62,
+      "tsMs": 620000,
+      "sheet": 0,
+      "cell": 62,
+      "lengthBytes": null
+    },
+    {
+      "index": 63,
+      "tsMs": 630000,
+      "sheet": 0,
+      "cell": 63,
+      "lengthBytes": null
+    },
+    {
+      "index": 64,
+      "tsMs": 640000,
+      "sheet": 0,
+      "cell": 64,
+      "lengthBytes": null
+    },
+    {
+      "index": 65,
+      "tsMs": 650000,
+      "sheet": 0,
+      "cell": 65,
+      "lengthBytes": null
+    },
+    {
+      "index": 66,
+      "tsMs": 660000,
+      "sheet": 0,
+      "cell": 66,
+      "lengthBytes": null
+    },
+    {
+      "index": 67,
+      "tsMs": 670000,
+      "sheet": 0,
+      "cell": 67,
+      "lengthBytes": null
+    },
+    {
+      "index": 68,
+      "tsMs": 680000,
+      "sheet": 0,
+      "cell": 68,
+      "lengthBytes": null
+    },
+    {
+      "index": 69,
+      "tsMs": 690000,
+      "sheet": 0,
+      "cell": 69,
+      "lengthBytes": null
+    },
+    {
+      "index": 70,
+      "tsMs": 700000,
+      "sheet": 0,
+      "cell": 70,
+      "lengthBytes": null
+    },
+    {
+      "index": 71,
+      "tsMs": 710000,
+      "sheet": 0,
+      "cell": 71,
+      "lengthBytes": null
+    },
+    {
+      "index": 72,
+      "tsMs": 720000,
+      "sheet": 0,
+      "cell": 72,
+      "lengthBytes": null
+    }
+  ]
+}

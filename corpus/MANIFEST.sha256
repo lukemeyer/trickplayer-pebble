@@ -1,7 +1,9 @@
 d62dc13c8311a9ed4a56fd2e232eeb16d4d249a92d911ffdde36d11b4a2e333d  ./README.md
 7b29daafe01b029a7cd29285d80a0ac6356c5358c5b951b4731e50ffa54c5a68  ./cues/layout.cases.json
-a205c56e36f5be51f9eb3f827c167f72783f9db015db72882df9c898bc0917c9  ./real/ATTRIBUTION.md
+137bf7a646403ad3bbd4da62b57ed92c230888e56eabf2c878906db3638ff7de  ./real/ATTRIBUTION.md
 ddef533d56fb7aa4cc9401e327dc6373496aabb01c900a7766c5a2a6bdb5e1b8  ./real/README.md
+16cbe190f2d268e8efd659a9b7a1f60108d63edc2e22982050ccdf6fd70f1d91  ./real/tears-of-steel-jellyfin.cues.json
+d4d90a484aad36f5d109854835fc12bc6c8ccfb3369f71895e810ef23066bc40  ./real/tears-of-steel-jellyfin.expected.json
 b95c8df54fed7ec6c14cab07db846f5445ce8b1a1b830d4c53744677bd933586  ./real/tears-of-steel.bif
 0700fba0ae4508c31c3d937a3138d23c10a8d222b19861acdf0995f6dac590bf  ./real/tears-of-steel.cues.json
 57875d35861434914126c37713cc6c94024352b711e5bf8e1947f23317047229  ./real/tears-of-steel.expected.json
