@@ -19,10 +19,21 @@ var binaryMode = null;         // "arraybuffer" or "latin1-text", logged once (R
 
 function log(s) { console.log("[plex] " + s); }
 
+// The token travels as a header, never as a query parameter. URLs are logged
+// — by proxies, by servers, by anything that records a request line — and a
+// credential in one ends up in cache keys, in Referer, and in any log excerpt
+// pasted into a findings doc. Headers usually are not logged.
+// See trickplayer-knowledge findings/F-021.
+//
+// Verified against a real Plex server: it answers the CORS preflight with
+// `access-control-allow-headers: x-plex-token,range`. PKJS is not subject to
+// CORS at all, so this is unconditionally safe here.
+//
 // cb(err, Uint8Array)
-function getRange(url, from, to, cb) {
+function getRange(url, from, to, token, cb) {
 	var xhr = new XMLHttpRequest();
 	xhr.open("GET", url, true);
+	if (token) xhr.setRequestHeader("X-Plex-Token", token);
 
 	// Ask for both. A runtime can ACCEPT responseType = "arraybuffer" — the
 	// assignment sticks and reads back correctly — and still leave `response`
@@ -78,9 +89,9 @@ function getRange(url, from, to, cb) {
 	try { xhr.send(); } catch (e2) { cb(e2); }
 }
 
+// No token here — pass cfg.token to getRange instead (F-021).
 function timelineUrl(cfg) {
-	return cfg.server + "/library/parts/" + cfg.timelineRef +
-		"/indexes/sd?X-Plex-Token=" + cfg.token;
+	return cfg.server + "/library/parts/" + cfg.timelineRef + "/indexes/sd";
 }
 
 if (typeof module !== "undefined") {

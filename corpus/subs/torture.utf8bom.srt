@@ -1,0 +1,36 @@
+﻿1
+00:00:01,000 --> 00:00:03,000
+Plain line.
+
+2
+00:00:04,500 --> 00:00:06,000
+<i>Italic dialogue.</i>
+
+3
+00:00:07,000 --> 00:00:09,000
+{\an8}Top-positioned line.
+
+4
+00:00:10,000 --> 00:00:12,000
+Two lines
+in one cue.
+
+5
+00:10.500 --> 00:12.000
+No hours field, dot separator.
+
+6
+00:00:20,000 --> 00:00:22,000
+<font color="#ffffff">Font tag</font> and <b>bold</b>.
+
+7
+00:00:25,000 --> 00:00:27,000
+
+
+8
+00:00:30,000 --> 00:00:34,000
+Supercalifragilisticexpialidocious antidisestablishmentarianism
+
+9
+00:00:40,000 --> 00:00:42,000  line:90% position:50%
+Cue settings after the timestamp.

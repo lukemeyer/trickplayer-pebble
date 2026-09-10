@@ -1,0 +1,25 @@
+{
+  "note": "Every variant carries the SAME content as subs/torture.srt and must produce EXACTLY the cue list in subs/torture.expected.json. A decoder that assumes UTF-8 returns 0 cues from the UTF-16 files — silently, because an empty cue list is not an error.",
+  "rule": "Sniff the byte-order mark before decoding: FF FE => UTF-16LE, FE FF => UTF-16BE, EF BB BF => UTF-8 with the BOM stripped, otherwise UTF-8. Do NOT trust the Content-Type: the real server labelled a UTF-16 sidecar `text/html` with no charset.",
+  "variants": [
+    {
+      "file": "subs/torture.utf16le.srt",
+      "bom": "ff fe",
+      "why": "FF FE — what the real server served. 50% null bytes.",
+      "expectSameAs": "subs/torture.expected.json"
+    },
+    {
+      "file": "subs/torture.utf16be.srt",
+      "bom": "fe ff",
+      "why": "FE FF — the other byte order; rarer but legal.",
+      "expectSameAs": "subs/torture.expected.json"
+    },
+    {
+      "file": "subs/torture.utf8bom.srt",
+      "bom": "ef bb bf",
+      "why": "EF BB BF — decodes as UTF-8, but the BOM must not survive into the first cue's index line.",
+      "expectSameAs": "subs/torture.expected.json"
+    }
+  ],
+  "alsoAcceptsPlain": "subs/torture.srt has no BOM and must still decode as UTF-8"
+}

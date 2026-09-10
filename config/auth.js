@@ -176,8 +176,8 @@
 			var c = conns[i++];
 			var uri = c.uri;
 			if (onProgress) onProgress(uri, i, conns.length);
-			return fetch(uri + "/identity?X-Plex-Token=" + encodeURIComponent(token), {
-				headers: { Accept: "application/json" }
+			return fetch(uri + "/identity", {
+				headers: { Accept: "application/json", "X-Plex-Token": token }
 			}).then(function (r) {
 				return r.ok ? uri : next();
 			}).catch(function () { return next(); });

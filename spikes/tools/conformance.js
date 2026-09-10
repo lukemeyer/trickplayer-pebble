@@ -107,6 +107,23 @@ function skip(group, name, why) { skipped.push({ group, name, why }); }
   }
 })();
 
+// -------------------------------------------------------------- encodings
+
+(function checkSubEncodings() {
+  const exp = readJson("subs/torture.expected.json");
+  const enc = readJson("subs/encodings.expected.json");
+  for (const v of enc.variants) {
+    const bytes = new Uint8Array(fs.readFileSync(path.join(CORPUS, v.file)));
+    const cues = subs.parse(subs.decodeBytes(bytes));
+    check("encoding", `${v.file} cueCount`, cues.length, exp.cueCount);
+    check("encoding", `${v.file} cues`,
+      cues.map((c) => ({ startMs: c.startMs, endMs: c.endMs, text: c.text })), exp.cues);
+  }
+  const plain = new Uint8Array(fs.readFileSync(path.join(CORPUS, "subs/torture.srt")));
+  check("encoding", "no BOM still decodes as UTF-8",
+    subs.parse(subs.decodeBytes(plain)).length, exp.cueCount);
+})();
+
 // ------------------------------------------------------------------- scene
 
 (function checkScene() {

@@ -10,6 +10,54 @@
 // The time regex tolerates a missing hours field and both , and . as the
 // millisecond separator, which the original handled and real files need.
 
+// Decode subtitle bytes, sniffing the byte-order mark.
+//
+// A real Plex server serves UTF-16 sidecars, labelled text/html with no
+// charset. Decoding blindly as UTF-8 gives a string full of NULs, out of which
+// parse() extracts ZERO cues — silently, because an empty cue list is not an
+// error. The face then shows frames with no dialogue for the whole episode,
+// and SKIP_SILENT judges every window silent on top of that.
+// See trickplayer-knowledge findings/F-035.
+//
+// PKJS has no TextDecoder, so UTF-16 is assembled by hand. Characters are
+// built in chunks: String.fromCharCode.apply with a very large argument list
+// can blow the stack, and a sidecar is tens of thousands of characters.
+var CHUNK = 4096;
+
+function fromCharCodes(codes) {
+	var out = "";
+	for (var i = 0; i < codes.length; i += CHUNK) {
+		out += String.fromCharCode.apply(null, codes.slice(i, i + CHUNK));
+	}
+	return out;
+}
+
+// bytes: Uint8Array (or array-like of byte values). Returns a JS string.
+function decodeBytes(bytes) {
+	var n = bytes.length, i;
+
+	// UTF-16LE
+	if (n >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+		var le = [];
+		for (i = 2; i + 1 < n; i += 2) le.push(bytes[i] | (bytes[i + 1] << 8));
+		return fromCharCodes(le);
+	}
+	// UTF-16BE
+	if (n >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+		var be = [];
+		for (i = 2; i + 1 < n; i += 2) be.push((bytes[i] << 8) | bytes[i + 1]);
+		return fromCharCodes(be);
+	}
+
+	// UTF-8, with or without a BOM. Widen the byte string the classic way —
+	// PKJS has no TextDecoder — and fall back to the raw bytes if it is not
+	// valid UTF-8 after all.
+	var start = (n >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) ? 3 : 0;
+	var raw = "";
+	for (i = start; i < n; i++) raw += String.fromCharCode(bytes[i] & 0xff);
+	try { return decodeURIComponent(escape(raw)); } catch (e) { return raw; }
+}
+
 var TIME_RE = /(\d{1,2})?:?(\d{2}):(\d{2})[,.](\d{3})/;
 
 function toMs(s) {
@@ -70,5 +118,10 @@ function cuesInWindow(cues, fromMs, toMs) {
 }
 
 if (typeof module !== "undefined") {
-	module.exports = { parse: parse, cuesInWindow: cuesInWindow, toMs: toMs };
+	module.exports = {
+		parse: parse,
+		cuesInWindow: cuesInWindow,
+		toMs: toMs,
+		decodeBytes: decodeBytes
+	};
 }

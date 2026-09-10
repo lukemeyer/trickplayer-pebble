@@ -105,18 +105,15 @@ var loading = false;
 // makes most advances text-only.
 function loadSubs(cb) {
 	if (cues || !cfg || !cfg.subtitleRef) { cb(null); return; }
-	var url = cfg.server + cfg.subtitleRef +
-		(cfg.subtitleRef.indexOf("?") === -1 ? "?" : "&") + "X-Plex-Token=" + cfg.token;
-	plex.getRange(url, null, null, function (err, bytes) {
+	var url = cfg.server + cfg.subtitleRef;
+	plex.getRange(url, null, null, cfg.token, function (err, bytes) {
 		if (err) { log("subs failed: " + err.message); cb(null); return; }
-		var s = "";
-		for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
 		try {
-			// The sidecar is UTF-8; decodeURIComponent(escape(...)) is the
-			// classic way to widen a byte string without TextDecoder, which
-			// PKJS does not have.
-			try { s = decodeURIComponent(escape(s)); } catch (e) { /* keep raw */ }
-			cues = subsLib.parse(s);
+			// The sidecar is NOT reliably UTF-8 — a real Plex server serves
+			// UTF-16, labelled text/html with no charset. subsLib.decodeBytes
+			// sniffs the BOM; assuming UTF-8 yielded zero cues, silently.
+			// See trickplayer-knowledge findings/F-035.
+			cues = subsLib.parse(subsLib.decodeBytes(bytes));
 			log("subtitles: " + cues.length + " cues");
 		} catch (e2) {
 			log("subs parse failed: " + e2.message);
@@ -134,14 +131,14 @@ function loadIndex(cb) {
 	loading = true;
 
 	var url = plex.timelineUrl(cfg);
-	plex.getRange(url, 0, 63, function (err, head) {
+	plex.getRange(url, 0, 63, cfg.token, function (err, head) {
 		if (err) { loading = false; cb(err); return; }
 		var header;
 		try { header = timeline.parseHeader(head); }
 		catch (e) { loading = false; cb(e); return; }
 
 		log("BIF " + header.count + " frames, multiplier " + header.multiplier + "ms");
-		plex.getRange(url, 0, header.indexBytes - 1, function (err2, idxBytes) {
+		plex.getRange(url, 0, header.indexBytes - 1, cfg.token, function (err2, idxBytes) {
 			loading = false;
 			if (err2) { cb(err2); return; }
 			try {
@@ -210,7 +207,8 @@ function makeRealScene(sceneIdx, cb) {
 		var ent = index[fi];
 		var url = plex.timelineUrl(cfg);
 
-		plex.getRange(url, ent.offset, ent.offset + ent.length - 1, function (e2, jpgBytes) {
+		plex.getRange(url, ent.offset, ent.offset + ent.length - 1, cfg.token,
+			function (e2, jpgBytes) {
 			if (e2) { cb(e2); return; }
 			var t0 = Date.now();
 			var img, enc;

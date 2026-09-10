@@ -26,11 +26,14 @@
 
 	function show(id, yes) { $(id).classList.toggle("hide", !yes); }
 
+	// Token as a header, not a query parameter (F-021). Plex answers the CORS
+	// preflight with `access-control-allow-headers: x-plex-token`, verified
+	// against a real server from both a dev origin and the Pages origin.
 	function api(path) {
-		var url = state.server.replace(/\/$/, "") + path +
-			(path.indexOf("?") === -1 ? "?" : "&") +
-			"X-Plex-Token=" + encodeURIComponent(state.token);
-		return fetch(url, { headers: { Accept: "application/json" } })
+		var url = state.server.replace(/\/$/, "") + path;
+		return fetch(url, {
+			headers: { Accept: "application/json", "X-Plex-Token": state.token }
+		})
 			.then(function (r) {
 				if (!r.ok) throw new Error("HTTP " + r.status);
 				return r.json();
