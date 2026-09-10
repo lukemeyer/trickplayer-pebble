@@ -340,6 +340,31 @@ function runPrefetch() {
 	});
 }
 
+// How hard to try a chunk that fails to land.
+//
+// Ported from the G2 build's BLE work — the first finding to travel that way
+// rather than G2 -> Pebble -> Wear OS. See trickplayer-knowledge F-027.
+//
+// This transport had NO retry at all: a single failed chunk discarded the rest
+// of the scene. That is expensive twice over. The scene cost a ranged fetch, a
+// JPEG decode, a median cut and a dither to build, and — because metadata
+// rides the LAST chunk — losing any chunk also loses the cues, which are the
+// cheap and genuinely valuable half. A transient BLE hiccup should not cost
+// all of that.
+//
+// The BUDGET matters more than the attempt count. Each failure still costs its
+// own timeout, and everything behind this scene in the queue waits: retrying
+// an unlucky chunk indefinitely would stall delivery rather than protect it.
+// Past the budget, dropping the scene is still the right answer.
+var CHUNK_MAX_ATTEMPTS = 3;
+var CHUNK_RETRY_DELAY_MS = 250;
+var SCENE_RETRY_BUDGET_MS = 4000;
+
+function dropScene(scene, why) {
+	log("dropping scene " + scene.idx + ": " + why);
+	queue = queue.filter(function (j) { return j.scene !== scene; });
+}
+
 function pump() {
 	if (sending || queue.length === 0) return;
 	sending = true;
@@ -369,11 +394,25 @@ function pump() {
 		pump();                       // next chunk only after this one lands
 	}, function (e) {
 		sending = false;
-		log("send failed scene " + scene.idx + " seq " + job.seq + ": " +
-			(e && e.error ? e.error.message : "?"));
-		// Drop the rest of this scene: a half-delivered frame is useless and
-		// retrying blind would just burn radio.
-		queue = queue.filter(function (j) { return j.scene !== scene; });
+		var why = (e && e.error && e.error.message) ? e.error.message : "?";
+
+		job.attempts = (job.attempts || 0) + 1;
+		if (scene.retryStartMs === undefined) scene.retryStartMs = Date.now();
+		var spent = Date.now() - scene.retryStartMs;
+
+		if (job.attempts < CHUNK_MAX_ATTEMPTS && spent < SCENE_RETRY_BUDGET_MS) {
+			log("send failed scene " + scene.idx + " seq " + job.seq + ": " + why +
+				" (attempt " + job.attempts + ", " + spent + "ms spent) — retrying");
+			queue.unshift(job);       // same chunk, front of the queue
+			setTimeout(pump, CHUNK_RETRY_DELAY_MS);
+			return;
+		}
+
+		// Out of attempts or out of budget. A half-delivered frame is useless,
+		// so the rest of this scene goes; the queue moves on rather than
+		// stalling behind an unlucky chunk.
+		dropScene(scene, "seq " + job.seq + " failed " + job.attempts +
+			"x in " + spent + "ms (" + why + ")");
 		pump();
 	});
 }
